@@ -1,0 +1,13 @@
+# Archivos del sistema e IDEs
+.DS_Store
+.vscode/
+.idea/
+
+# Dependencias y compilados
+node_modules/
+build/
+dist/
+__pycache__/
+
+# Variables de entorno
+.env 
