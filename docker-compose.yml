@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # Servicio de Base de Datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: redcuidadora_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password}
+      POSTGRES_DB: ${DB_NAME:-redcuidadora_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Servicio Backend / API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: redcuidadora_backend
+    restart: always
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres_user}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres_password}
+      - DB_NAME=${DB_NAME:-redcuidadora_db}
+      - JWT_SECRET=${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
