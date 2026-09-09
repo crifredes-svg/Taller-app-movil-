@@ -10,7 +10,7 @@
 
 * **Definición del Problema:** Dificultad en el acceso oportuno a recursos de apoyo psicosocial y orientación en salud mental a nivel comunitario, lo que genera desinformación, barreras de atención y falta de seguimiento en los usuarios.
 * **Stack Tecnológico:**
-  * **Frontend Móvil:** Android Studio / Flutter (Multiplataforma)
+  * **Frontend Móvil:** Android Studio / Flutter / Figma (Multiplataforma)
   * **Backend API:** 
   * **Base de Datos:**   (Normalizada)
   * **Control de Versiones:** Git & GitHub (Flujo Gitflow)
