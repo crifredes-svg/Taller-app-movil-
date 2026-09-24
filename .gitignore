@@ -11,3 +11,9 @@ __pycache__/
 
 # Variables de entorno
 .env 
+
+# Python / Backend
+venv/
+*.pyc
+.pytest_cache/
+app.db
