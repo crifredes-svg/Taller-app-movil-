@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +40,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
+import com.redcuidadora.app.ui.navigation.Screen
+import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.redcuidadora.app.ui.theme.DarkSurface
@@ -68,6 +74,7 @@ fun CalendarioScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -392,5 +399,45 @@ fun CalendarioScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Preview(name = "Teléfono - Calendario", showBackground = true, showSystemUi = true)
+@Composable
+fun CalendarioScreenPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.Calendario.route,
+                    onNavigateToRoute = {}
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                CalendarioScreen(onNavigateToSolicitudes = {})
+            }
+        }
+    }
+}
+
+@Preview(name = "Tablet - Calendario", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true, showSystemUi = true)
+@Composable
+fun CalendarioScreenTabletPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.Calendario.route,
+                    onNavigateToRoute = {}
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                CalendarioScreen(onNavigateToSolicitudes = {})
+            }
+        }
     }
 }

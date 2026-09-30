@@ -41,7 +41,9 @@ fun RedCuidadoraBottomNavigation(
                 label = {
                     Text(
                         text = screen.title,
-                        fontSize = 11.sp,
+                        fontSize = 9.5.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                     )
                 },

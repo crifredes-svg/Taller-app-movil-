@@ -11,16 +11,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -29,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
+import com.redcuidadora.app.ui.navigation.Screen
+import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,6 +64,7 @@ fun RedScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
             .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState())
     ) {
@@ -185,7 +192,7 @@ fun RedScreen() {
                         containerColor = DarkSurfaceVariant,
                         selectedContainerColor = PrimaryEmerald,
                         selectedLabelColor = TextPrimaryDark,
-                        unselectedLabelColor = TextSecondaryDark
+                        labelColor = TextSecondaryDark
                     ),
                     border = null
                 )
@@ -255,7 +262,7 @@ fun RedScreen() {
                             }
                             IconButton(onClick = { /* WhatsApp */ }) {
                                 Icon(
-                                    imageVector = Icons.Default.Send,
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
                                     contentDescription = "Mensaje",
                                     tint = StatusGreen
                                 )
@@ -303,6 +310,46 @@ fun RedScreen() {
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Preview(name = "Teléfono - Mi Red", showBackground = true, showSystemUi = true)
+@Composable
+fun RedScreenPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.MiRed.route,
+                    onNavigateToRoute = {}
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                RedScreen()
+            }
+        }
+    }
+}
+
+@Preview(name = "Tablet - Mi Red", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true, showSystemUi = true)
+@Composable
+fun RedScreenTabletPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.MiRed.route,
+                    onNavigateToRoute = {}
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                RedScreen()
+            }
+        }
     }
 }
 

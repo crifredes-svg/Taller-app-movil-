@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,6 +39,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
+import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
+import com.redcuidadora.app.ui.navigation.Screen
+import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -52,13 +58,17 @@ import com.redcuidadora.app.ui.theme.TextPrimaryDark
 import com.redcuidadora.app.ui.theme.TextSecondaryDark
 
 @Composable
-fun SolicitudesScreen() {
+fun SolicitudesScreen(
+    bottomBar: @Composable () -> Unit = {},
+    onOpenActionChoice: () -> Unit = {}
+) {
     var selectedFilter by remember { mutableStateOf("Todas") }
 
     Scaffold(
+        bottomBar = bottomBar,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* New request */ },
+                onClick = onOpenActionChoice,
                 containerColor = PrimaryEmerald,
                 contentColor = TextPrimaryDark,
                 shape = CircleShape
@@ -72,6 +82,7 @@ fun SolicitudesScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .statusBarsPadding()
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -108,7 +119,7 @@ fun SolicitudesScreen() {
                             containerColor = DarkSurfaceVariant,
                             selectedContainerColor = PrimaryEmerald,
                             selectedLabelColor = TextPrimaryDark,
-                            unselectedLabelColor = TextSecondaryDark
+                            labelColor = TextSecondaryDark
                         ),
                         border = null
                     )
@@ -341,5 +352,35 @@ fun SolicitudesScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Preview(name = "Teléfono - Solicitudes", showBackground = true, showSystemUi = true)
+@Composable
+fun SolicitudesScreenPreview() {
+    RedCuidadoraTheme {
+        SolicitudesScreen(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.Solicitudes.route,
+                    onNavigateToRoute = {}
+                )
+            }
+        )
+    }
+}
+
+@Preview(name = "Tablet - Solicitudes", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true, showSystemUi = true)
+@Composable
+fun SolicitudesScreenTabletPreview() {
+    RedCuidadoraTheme {
+        SolicitudesScreen(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.Solicitudes.route,
+                    onNavigateToRoute = {}
+                )
+            }
+        )
     }
 }

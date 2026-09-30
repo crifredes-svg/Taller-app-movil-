@@ -6,11 +6,13 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -53,6 +55,27 @@ sealed class Screen(
         selectedIcon = Icons.Filled.CalendarMonth,
         unselectedIcon = Icons.Outlined.CalendarMonth
     )
+
+    object Perfil : Screen(
+        route = "perfil",
+        title = "Mis Datos",
+        selectedIcon = Icons.Filled.Person,
+        unselectedIcon = Icons.Outlined.Person
+    )
+
+    object AnadirContacto : Screen(
+        route = "anadir_contacto",
+        title = "Añadir Contacto",
+        selectedIcon = Icons.Filled.Home,
+        unselectedIcon = Icons.Outlined.Home
+    )
+
+    object CrearSolicitud : Screen(
+        route = "crear_solicitud",
+        title = "Crear Solicitud",
+        selectedIcon = Icons.Filled.Home,
+        unselectedIcon = Icons.Outlined.Home
+    )
 }
 
 val bottomNavScreens = listOf(
@@ -60,5 +83,6 @@ val bottomNavScreens = listOf(
     Screen.MiCarga,
     Screen.Solicitudes,
     Screen.MiRed,
-    Screen.Calendario
+    Screen.Calendario,
+    Screen.Perfil
 )

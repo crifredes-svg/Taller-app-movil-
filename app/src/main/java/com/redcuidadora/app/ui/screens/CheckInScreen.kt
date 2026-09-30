@@ -33,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,6 +44,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
+import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
+import com.redcuidadora.app.ui.navigation.Screen
+import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -287,5 +292,45 @@ fun CheckInScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Preview(name = "Teléfono - Mi Carga", showBackground = true, showSystemUi = true)
+@Composable
+fun CheckInScreenPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.MiCarga.route,
+                    onNavigateToRoute = {}
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                CheckInScreen(onNavigateBack = {})
+            }
+        }
+    }
+}
+
+@Preview(name = "Tablet - Mi Carga", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true, showSystemUi = true)
+@Composable
+fun CheckInScreenTabletPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.MiCarga.route,
+                    onNavigateToRoute = {}
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                CheckInScreen(onNavigateBack = {})
+            }
+        }
     }
 }
