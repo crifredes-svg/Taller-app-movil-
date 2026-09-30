@@ -55,6 +55,7 @@ def crear_usuario(
         )
 
     usuario = models.Usuario(**datos.model_dump())
+
     db.add(usuario)
     db.commit()
     db.refresh(usuario)
@@ -177,6 +178,74 @@ def crear_contacto(
     return contacto
 
 
+@router_contactos.post(
+    "/usuarios/{usuario_id}/por-codigo",
+    response_model=schemas.ContactoConfianzaOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def crear_contacto_por_codigo(
+    usuario_id: int,
+    datos: schemas.ContactoPorCodigoIn,
+    db: Session = Depends(get_db),
+):
+    propietario = db.get(models.Usuario, usuario_id)
+
+    if propietario is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+
+    usuario_contacto = (
+        db.query(models.Usuario)
+        .filter(models.Usuario.codigo_unico == datos.codigo_unico)
+        .first()
+    )
+
+    if usuario_contacto is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No existe un usuario asociado a ese código",
+        )
+
+    if usuario_contacto.id == usuario_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes añadirte a tu propia red de confianza",
+        )
+
+    contacto_existente = (
+        db.query(models.ContactoConfianza)
+        .filter(
+            models.ContactoConfianza.usuario_id == usuario_id,
+            models.ContactoConfianza.contacto_usuario_id
+            == usuario_contacto.id,
+        )
+        .first()
+    )
+
+    if contacto_existente:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Esta persona ya pertenece a tu red de confianza",
+        )
+
+    contacto = models.ContactoConfianza(
+        nombre=usuario_contacto.nombre,
+        relacion=datos.relacion,
+        apoyos=datos.apoyos,
+        disponibilidad=datos.disponibilidad,
+        usuario_id=usuario_id,
+        contacto_usuario_id=usuario_contacto.id,
+    )
+
+    db.add(contacto)
+    db.commit()
+    db.refresh(contacto)
+
+    return contacto
+
+
 @router_contactos.get(
     "/usuarios/{usuario_id}",
     response_model=list[schemas.ContactoConfianzaOut],
@@ -219,6 +288,12 @@ def crear_solicitud_relevo(
             detail="El solicitante no existe",
         )
 
+    if datos.hora_fin <= datos.hora_inicio:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La hora de término debe ser posterior a la hora de inicio",
+        )
+
     solicitud = models.SolicitudRelevo(**datos.model_dump())
 
     db.add(solicitud)
@@ -250,7 +325,10 @@ def listar_relevos_usuario(
             (models.SolicitudRelevo.solicitante_id == usuario_id)
             | (models.SolicitudRelevo.cuidador_id == usuario_id)
         )
-        .order_by(models.SolicitudRelevo.fecha.asc())
+        .order_by(
+            models.SolicitudRelevo.fecha.asc(),
+            models.SolicitudRelevo.hora_inicio.asc(),
+        )
         .all()
     )
 
@@ -281,7 +359,19 @@ def actualizar_relevo(
                 detail="El cuidador no existe",
             )
 
+        if cuidador.id == relevo.solicitante_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El solicitante no puede aceptar su propia solicitud",
+            )
+
         relevo.cuidador_id = datos.cuidador_id
+
+    if datos.estado == "aceptada" and relevo.cuidador_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debe indicarse quién cubrirá el relevo",
+        )
 
     relevo.estado = datos.estado
 
