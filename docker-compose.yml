@@ -1,20 +1,6 @@
 version: '3.8'
 
 services:
-  # Servicio de Base de Datos PostgreSQL
-  db:
-    image: postgres:15-alpine
-    container_name: redcuidadora_db
-    restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password}
-      POSTGRES_DB: ${DB_NAME:-redcuidadora_db}
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   # Servicio Backend / API
   backend:
     build:
@@ -23,16 +9,21 @@ services:
     container_name: redcuidadora_backend
     restart: always
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-9000}:8000"
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER:-postgres_user}
-      - DB_PASSWORD=${DB_PASSWORD:-postgres_password}
-      - DB_NAME=${DB_NAME:-redcuidadora_db}
-      - JWT_SECRET=${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
-    depends_on:
-      - db
-
-volumes:
-  postgres_data:
+      DB_HOST: ${DB_HOST:?Configura DB_HOST con el servidor indicado por DevOps}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:?Configura DB_USER con los datos indicados por DevOps}
+      DB_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD en tu archivo .env local}
+      DB_NAME: ${DB_NAME:?Configura DB_NAME con los datos indicados por DevOps}
+      JWT_SECRET: ${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

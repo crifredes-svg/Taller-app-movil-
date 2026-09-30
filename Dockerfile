@@ -1,8 +1,18 @@
-# Imagen base ligera
-FROM nginx:alpine
+FROM python:3.12-slim
 
-# Exponer el puerto 80 del contenedor
-EXPOSE 80
+ENV PYTHONDONTWRITEBYTECODE=1 \
+	PYTHONUNBUFFERED=1
 
-# Comando de inicio
-CMD ["nginx", "-g", "daemon off;"]
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN addgroup --system app && adduser --system --ingroup app app
+COPY --chown=app:app app ./app
+
+USER app
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
