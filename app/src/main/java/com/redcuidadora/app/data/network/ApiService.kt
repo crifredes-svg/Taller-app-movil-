@@ -1,5 +1,6 @@
 package com.redcuidadora.app.data.network
 
+import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -12,62 +13,62 @@ data class UsuarioDto(
     val id: Int? = null,
     val nombre: String,
     val correo: String,
-    val rol_general: String? = null,
-    val persona_a_cargo: String? = null,
+    @SerializedName("rol_general") val rolGeneral: String? = null,
+    @SerializedName("persona_a_cargo") val personaACargo: String? = null,
     val genero: String? = null,
-    val codigo_unico: String? = null
+    @SerializedName("codigo_unico") val codigoUnico: String? = null,
 )
 
 data class CheckInDto(
     val id: Int? = null,
-    val usuario_id: Int? = null,
-    val nivel_sobrecarga: String,
+    @SerializedName("usuario_id") val usuarioId: Int? = null,
+    @SerializedName("nivel_sobrecarga") val nivelSobrecarga: String,
     val factores: List<String>? = emptyList(),
     val notas: String? = null,
-    val fecha: String? = null
+    val fecha: String? = null,
 )
 
 data class ContactoPorCodigoDto(
-    val codigo_unico: String,
+    @SerializedName("codigo_unico") val codigoUnico: String,
     val relacion: String,
     val apoyos: List<String>? = emptyList(),
-    val disponibilidad: String? = null
+    val disponibilidad: String? = null,
 )
 
 data class ContactoDto(
     val id: Int? = null,
-    val usuario_id: Int? = null,
+    @SerializedName("usuario_id") val usuarioId: Int? = null,
     val nombre: String,
     val relacion: String,
     val apoyos: List<String>? = emptyList(),
     val disponibilidad: String? = null,
-    val contacto_usuario_id: Int? = null
+    @SerializedName("contacto_usuario_id") val contactoUsuarioId: Int? = null,
 )
 
 data class SolicitudRelevoDto(
     val id: Int? = null,
-    val solicitante_id: Int,
-    val cuidador_id: Int? = null,
+    @SerializedName("solicitante_id") val solicitanteId: Int,
+    @SerializedName("cuidador_id") val cuidadorId: Int? = null,
     val titulo: String,
     val fecha: String,
-    val hora_inicio: String,
-    val hora_fin: String,
+    @SerializedName("hora_inicio") val horaInicio: String,
+    @SerializedName("hora_fin") val horaFin: String,
     val detalles: String? = null,
-    val estado: String? = "pendiente"
+    val estado: String? = "pendiente",
 )
 
 data class ActualizarEstadoRelevoDto(
     val estado: String,
-    val cuidador_id: Int? = null
+    @SerializedName("cuidador_id") val cuidadorId: Int? = null,
 )
 
 data class AlertaSOSDto(
     val id: Int? = null,
-    val usuario_id: Int,
+    @SerializedName("usuario_id") val usuarioId: Int,
     val mensaje: String? = "Alerta SOS de emergencia activada",
     val ubicacion: String? = null,
     val estado: String? = "activa",
-    val fecha: String? = null
+    val fecha: String? = null,
 )
 
 interface ApiService {
