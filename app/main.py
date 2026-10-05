@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 
-from .database import Base, engine
 from .routes import (
     router_usuarios,
     router_checkins,
@@ -9,8 +8,6 @@ from .routes import (
     router_sos,
 )
 
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="API RedCuidadora",

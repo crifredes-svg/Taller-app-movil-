@@ -6,6 +6,24 @@
 * **Backend & DBA:** Diego Anabalon
 * **DevOps & Integración:** Cristian Fredes
 
+## Ejecución del backend
+
+La API escucha en el puerto `8000` del contenedor y se publica en el `9000`.
+El frontend debe usar `http://<host-del-backend>:9000` o la URL HTTPS entregada
+por DevOps. `DB_HOST` y `DB_PORT` son los datos de PostgreSQL, no la URL de la
+API.
+
+Completa un archivo `.env` local con los datos reales de conexión de DevOps.
+La aplicación solo admite PostgreSQL y no crea una base local. Antes de aplicar
+migraciones, confirma con DevOps si la base compartida ya tiene tablas o datos;
+no ejecutes la migración inicial sobre una base existente sin verificar su
+estado. Para una base nueva, ejecuta `docker compose run --rm backend alembic
+upgrade head` y luego `docker compose up --build -d`.
+
+La documentación interactiva queda en `/docs` y la comprobación de salud en
+`/health`. Las rutas principales están bajo `/api/v1/usuarios`,
+`/api/v1/checkins`, `/api/v1/contactos`, `/api/v1/relevos` y `/api/v1/sos`.
+
 ## Formalización Técnica
 
 * **Definición del Problema:** Dificultad en el acceso oportuno a recursos de apoyo psicosocial y orientación en salud mental a nivel comunitario, lo que genera desinformación, barreras de atención y falta de seguimiento en los usuarios.
