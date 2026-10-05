@@ -10,15 +10,19 @@
 
 La API escucha en el puerto `8000` del contenedor y se publica en el `9000`.
 El frontend debe usar `http://<host-del-backend>:9000` o la URL HTTPS entregada
-por DevOps. `DB_HOST` y `DB_PORT` son los datos de PostgreSQL, no la URL de la
-API.
+para el API. La base de datos MySQL/MariaDB es un servicio distinto administrado
+por 1Panel; su host y puerto no son la URL de la API.
 
-Completa un archivo `.env` local con los datos reales de conexión de DevOps.
-La aplicación solo admite PostgreSQL y no crea una base local. Antes de aplicar
-migraciones, confirma con DevOps si la base compartida ya tiene tablas o datos;
-no ejecutes la migración inicial sobre una base existente sin verificar su
-estado. Para una base nueva, ejecuta `docker compose run --rm backend alembic
-upgrade head` y luego `docker compose up --build -d`.
+Completa `.env` con el nombre de la base, un usuario MySQL dedicado y su clave.
+`DB_HOST` debe ser un host o alias accesible desde el contenedor del backend;
+si ambos contenedores no comparten una red Docker, configura una dirección y un
+puerto publicados que sean accesibles desde el servidor. No uses la ruta de
+archivos de 1Panel como host ni la cuenta `root` para la aplicación.
+
+La aplicación solo admite MySQL/MariaDB y no crea una base local. Antes de
+aplicar migraciones, confirma que la base no tenga tablas o datos que deban
+conservarse. Para una base nueva, ejecuta `docker compose run --rm backend
+alembic upgrade head` y luego `docker compose up --build -d`.
 
 La documentación interactiva queda en `/docs` y la comprobación de salud en
 `/health`. Las rutas principales están bajo `/api/v1/usuarios`,

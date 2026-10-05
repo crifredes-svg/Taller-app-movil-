@@ -6,16 +6,16 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL:
     database_url = make_url(DATABASE_URL)
-    if database_url.get_backend_name() != "postgresql":
-        raise RuntimeError("La aplicación requiere una base PostgreSQL del servidor.")
+    if database_url.get_backend_name() not in {"mysql", "mariadb"}:
+        raise RuntimeError("La aplicación requiere MySQL o MariaDB en 1Panel.")
     DATABASE_URL = database_url.set(
-        drivername="postgresql+psycopg",
+        drivername="mysql+pymysql",
     ).render_as_string(hide_password=False)
 else:
     db_host = os.getenv("DB_HOST")
     if not db_host:
         raise RuntimeError(
-            "Configura DATABASE_URL o DB_HOST con los datos de PostgreSQL "
+            "Configura DATABASE_URL o DB_HOST con los datos de MySQL/MariaDB "
             "del servidor. No se crea una base local."
         )
 
@@ -33,16 +33,16 @@ else:
     ]
     if missing:
         raise RuntimeError(
-            "Faltan variables de conexión a PostgreSQL: "
+            "Faltan variables de conexión a MySQL/MariaDB: "
             + ", ".join(missing)
         )
 
     DATABASE_URL = URL.create(
-        "postgresql+psycopg",
+        "mysql+pymysql",
         username=db_user,
         password=db_password,
         host=db_host,
-        port=int(os.getenv("DB_PORT", "5432")),
+        port=int(os.getenv("DB_PORT", "3306")),
         database=db_name,
     ).render_as_string(hide_password=False)
 

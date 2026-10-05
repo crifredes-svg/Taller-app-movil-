@@ -19,7 +19,7 @@ jobs:
         env:
           PORT: 9000
           DB_HOST: 127.0.0.1
-          DB_PORT: 5432
+          DB_PORT: 3306
           DB_USER: ci
           DB_PASSWORD: ci
           DB_NAME: ci
