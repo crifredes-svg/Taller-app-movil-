@@ -15,6 +15,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Configura la clave del usuario MySQL en .env}
       DB_NAME: ${DB_NAME:?Configura la base de datos MySQL en .env}
       JWT_SECRET: ${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
+    networks:
+      - 1panel-network
     healthcheck:
       test:
         - CMD
@@ -25,3 +27,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+networks:
+  1panel-network:
+    external: true
