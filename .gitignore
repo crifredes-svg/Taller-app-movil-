@@ -17,3 +17,4 @@ venv/
 *.pyc
 .pytest_cache/
 app.db
+DOCUMENTACION_COMPLETA_RAMA_BACKEND.docx
