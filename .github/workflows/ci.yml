@@ -16,6 +16,13 @@ jobs:
 
       - name: Validar estructura de Docker Compose
         run: docker compose config
+        env:
+          PORT: 9000
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: ci
+          DB_PASSWORD: ci
+          DB_NAME: ci
 
       - name: Probar construcción de contenedores Docker
         run: docker compose build

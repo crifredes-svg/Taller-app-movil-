@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+PyMySQL[rsa]
+email-validator
+alembic

@@ -6,6 +6,28 @@
 * **Backend & DBA:** Diego Anabalon
 * **DevOps & Integración:** Cristian Fredes
 
+## Ejecución del backend
+
+La API escucha en el puerto `8000` del contenedor y se publica en el `9000`.
+El frontend debe usar `http://<host-del-backend>:9000` o la URL HTTPS entregada
+para el API. La base de datos MySQL/MariaDB es un servicio distinto administrado
+por 1Panel; su host y puerto no son la URL de la API.
+
+Completa `.env` con el nombre de la base, un usuario MySQL dedicado y su clave.
+`DB_HOST` debe ser un host o alias accesible desde el contenedor del backend;
+si ambos contenedores no comparten una red Docker, configura una dirección y un
+puerto publicados que sean accesibles desde el servidor. No uses la ruta de
+archivos de 1Panel como host ni la cuenta `root` para la aplicación.
+
+La aplicación solo admite MySQL/MariaDB y no crea una base local. Antes de
+aplicar migraciones, confirma que la base no tenga tablas o datos que deban
+conservarse. Para una base nueva, ejecuta `docker compose run --rm backend
+alembic upgrade head` y luego `docker compose up --build -d`.
+
+La documentación interactiva queda en `/docs` y la comprobación de salud en
+`/health`. Las rutas principales están bajo `/api/v1/usuarios`,
+`/api/v1/checkins`, `/api/v1/contactos`, `/api/v1/relevos` y `/api/v1/sos`.
+
 ## Formalización Técnica
 
 * **Definición del Problema:** Dificultad en el acceso oportuno a recursos de apoyo psicosocial y orientación en salud mental a nivel comunitario, lo que genera desinformación, barreras de atención y falta de seguimiento en los usuarios.
