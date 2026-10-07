@@ -9,11 +9,11 @@ services:
     ports:
       - "${PORT:-9000}:8000"
     environment:
-      DB_HOST: ${DB_HOST:?Configura DB_HOST con el host o alias de MySQL en 1Panel}
+      DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
-      DB_USER: ${DB_USER:?Configura un usuario de aplicacion MySQL}
-      DB_PASSWORD: ${DB_PASSWORD:?Configura la clave del usuario MySQL en .env}
-      DB_NAME: ${DB_NAME:?Configura la base de datos MySQL en .env}
+      DB_USER: ${DB_USER:-redcuidadora_app}
+      DB_PASSWORD: ${DB_PASSWORD:-clave_segura}
+      DB_NAME: ${DB_NAME:-redcuidadora_db}
       JWT_SECRET: ${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
     networks:
       - 1panel-network
