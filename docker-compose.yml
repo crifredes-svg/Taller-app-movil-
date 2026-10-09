@@ -11,10 +11,10 @@ services:
     environment:
       DB_HOST: ${DB_HOST:-mysql}
       DB_PORT: ${DB_PORT:-3306}
-      DB_USER: ${DB_USER:?Define DB_USER en el entorno o en .env}
-      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en el entorno o en .env}
-      DB_NAME: ${DB_NAME:?Define DB_NAME en el entorno o en .env}
-      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en el entorno o en .env}
+      DB_USER: ${DB_USER:-redcuidadora_app}
+      DB_PASSWORD: ${DB_PASSWORD:-clave_segura}
+      DB_NAME: ${DB_NAME:-redcuidadora_db}
+      JWT_SECRET: ${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
     networks:
       - 1panel-network
     healthcheck:
