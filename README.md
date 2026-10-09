@@ -19,14 +19,80 @@ si ambos contenedores no comparten una red Docker, configura una dirección y un
 puerto publicados que sean accesibles desde el servidor. No uses la ruta de
 archivos de 1Panel como host ni la cuenta `root` para la aplicación.
 
-La aplicación solo admite MySQL/MariaDB y no crea una base local. Antes de
-aplicar migraciones, confirma que la base no tenga tablas o datos que deban
-conservarse. Para una base nueva, ejecuta `docker compose run --rm backend
-alembic upgrade head` y luego `docker compose up --build -d`.
+La aplicación solo admite MySQL/MariaDB y no crea una base local. El contenedor
+de MySQL debe compartir la red Docker `1panel-network` con el backend y ser
+resoluble como `DB_HOST` (por ejemplo, `mysql`). Configura un usuario dedicado;
+no uses las credenciales de root ni los valores por defecto del Compose.
 
-La documentación interactiva queda en `/docs` y la comprobación de salud en
-`/health`. Las rutas principales están bajo `/api/v1/usuarios`,
-`/api/v1/checkins`, `/api/v1/contactos`, `/api/v1/relevos` y `/api/v1/sos`.
+Antes de aplicar migraciones, confirma que la base no tenga tablas o datos que
+deban conservarse. En una base nueva, ejecuta `docker compose run --rm backend
+alembic upgrade head` y luego `docker compose up --build -d`. La migración más
+reciente rellena `codigo_unico` para usuarios que ya existían.
+
+**Seguridad:** todo acceso a datos exige `Authorization: Bearer <token>`.
+Registra la cuenta
+con `POST /api/v1/usuarios` (incluye contraseña de al menos 12 caracteres) e
+inicia sesión con `POST /api/v1/auth/login` para obtener un JWT de 30 minutos.
+El registro devuelve el perfil creado y el login devuelve el perfil propio junto
+al token para que el cliente pueda cargar la pantalla sin un GET de usuarios.
+El JWT se firma con `JWT_SECRET`, que debe ser distinto, aleatorio y de al menos
+32 bytes en cada entorno. El registro y login son públicos; los demás endpoints
+de datos exigen token. Los recursos por usuario se limitan al propietario, con
+excepciones controladas para aceptación de relevos y respuesta a SOS.
+
+En el router de usuarios la única ruta es `POST /api/v1/usuarios` para registro.
+No se expone ningún GET para listar o consultar perfiles de usuario.
+La pantalla de perfil guarda cambios propios mediante
+`PATCH /api/v1/perfil/me`, protegido por bearer; no acepta un ID de usuario.
+El texto libre del perfil se guarda en `ocupacion`; `tipo` se mantiene como
+clasificación interna `estudiante` o `red`.
+
+Para añadir contactos, el código nuevo se muestra como `RC-` más seis dígitos
+hexadecimales (ejemplo `RC-D35C82`). `POST /api/v1/contactos/usuarios/{id}/por-codigo`
+acepta ese formato y códigos antiguos de ocho caracteres. Solo requiere código
+y relación; apoyos y disponibilidad pueden completarse después. Check-ins
+aceptan `factores` como lista JSON (multiselección Android) o como texto legado.
+
+El botón SOS registra una alerta con `POST /api/v1/sos`. Una persona vinculada
+puede consultar alertas activas recibidas con `GET /api/v1/sos/recibidas` y
+responder mediante `PATCH /api/v1/sos/{alerta_id}`. Esto es una bandeja
+consultable, no una notificación push: FCM no está conectado.
+
+La vista de Mi Red obtiene horas y porcentaje de relevos completados durante el
+mes con `GET /api/v1/contactos/usuarios/{id}/balance`. El calendario obtiene las
+horas de solicitudes aceptadas o completadas de la semana con
+`GET /api/v1/relevos/resumen/semana`.
+El inicio consulta `GET /api/v1/checkins/tendencia`, que sugiere pedir apoyo si
+hay carga alta en al menos tres días distintos de los últimos cinco; es una
+regla preventiva simple, no un diagnóstico.
+
+Se incluye `postman/RedCuidadora.postman_collection.json` con pruebas de
+registro/login, perfil, check-in, red, relevo y SOS. Importa la colección y
+configura variables locales: `base_url`, `correo`, `password`, `helper_email` y
+`helper_password`. No uses credenciales reales en archivos versionados; para
+MySQL y `JWT_SECRET`, configura los secretos en el entorno de despliegue.
+
+En despliegue, termina TLS/HTTPS en un proxy inverso con certificado válido
+(por ejemplo, el proxy configurado en 1Panel); no publiques directamente el
+puerto HTTP del contenedor a Internet. HTTPS cifra el transporte, pero no
+sustituye los tokens ni la autorización. `/health` solo confirma que el proceso
+HTTP responde; no verifica que MySQL esté disponible.
+
+El lifespan aplica primero `alembic upgrade head` y después
+`Base.metadata.create_all`. Esto automatiza el esquema para el arranque, pero
+en producción se debe probar la migración con backup y considerar que varios
+workers arrancando a la vez pueden competir por migrar. Los errores no
+controlados responden JSON genérico 500; el detalle real se reserva a logs
+internos para no filtrar SQL, credenciales ni rutas del servidor.
+
+La documentación interactiva y el esquema OpenAPI están deshabilitados en el
+servidor para no publicar un explorador de rutas. La comprobación de salud queda
+en `/health`. Las rutas principales están bajo `/api/v1/usuarios`,
+`/api/v1/auth`, `/api/v1/perfil`, `/api/v1/checkins`, `/api/v1/contactos`,
+`/api/v1/relevos` y `/api/v1/sos`; `GET /hello` devuelve `Hello World` como
+consulta pública solicitada para la evaluación.
+No existe un endpoint para listar todos los usuarios: se retiró para evitar
+enumerar públicamente correos, códigos y perfiles.
 
 ## Formalización Técnica
 
