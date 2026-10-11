@@ -3,14 +3,18 @@ import os
 from sqlalchemy import URL, create_engine, make_url
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL:
-    database_url = make_url(DATABASE_URL)
+configured_database_url = os.getenv("DATABASE_URL")
+DATABASE_URL: URL
+if configured_database_url:
+    database_url = make_url(configured_database_url)
     if database_url.get_backend_name() not in {"mysql", "mariadb"}:
         raise RuntimeError("La aplicación requiere MySQL o MariaDB en 1Panel.")
+    query = dict(database_url.query)
+    query.setdefault("charset", "utf8mb4")
     DATABASE_URL = database_url.set(
         drivername="mysql+pymysql",
-    ).render_as_string(hide_password=False)
+        query=query,
+    )
 else:
     db_host = os.getenv("DB_HOST")
     if not db_host:
@@ -44,9 +48,14 @@ else:
         host=db_host,
         port=int(os.getenv("DB_PORT", "3306")),
         database=db_name,
-    ).render_as_string(hide_password=False)
+        query={"charset": "utf8mb4"},
+    )
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+)
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 Base = declarative_base()
 

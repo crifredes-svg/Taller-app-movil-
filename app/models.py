@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String
@@ -7,9 +7,14 @@ from sqlalchemy.orm import relationship
 from .database import Base
 
 
+def utc_now_naive() -> datetime:
+    """Retorna UTC sin tzinfo para compatibilidad con columnas MySQL DATETIME."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
 def generar_codigo_usuario() -> str:
     """Genera el código único que permite añadir al usuario a una red."""
-    return uuid4().hex[:8].upper()
+    return uuid4().hex[:6].upper()
 
 
 class Usuario(Base):
@@ -20,6 +25,8 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True)
     nombre = Column(String(80), nullable=False)
     correo = Column(String(120), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=True)
+    ocupacion = Column(String(100), nullable=True)
     tipo = Column(
         String(20),
         nullable=False,
@@ -65,7 +72,7 @@ class CheckIn(Base):
     fecha = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utc_now_naive,
     )
 
     usuario_id = Column(
@@ -185,7 +192,7 @@ class AlertaSOS(Base):
     fecha = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=utc_now_naive,
     )
 
     usuario_id = Column(

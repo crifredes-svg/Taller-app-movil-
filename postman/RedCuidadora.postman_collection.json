@@ -1,0 +1,323 @@
+{
+  "info": {
+    "name": "RedCuidadora API (privada para pruebas Postman)",
+    "description": "Colección para probar registro, login y operaciones protegidas. Configura base_url, correo, password, helper_email y helper_password como variables de colección. Usa solo datos ficticios y una base de pruebas. No contiene credenciales reales ni requiere Swagger/OpenAPI.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:9000" },
+    { "key": "correo", "value": "" },
+    { "key": "password", "value": "" },
+    { "key": "access_token", "value": "" },
+    { "key": "usuario_id", "value": "" },
+    { "key": "contact_code", "value": "" },
+    { "key": "helper_email", "value": "" },
+    { "key": "helper_password", "value": "" },
+    { "key": "helper_user_id", "value": "" },
+    { "key": "helper_access_token", "value": "" },
+    { "key": "relevo_id", "value": "" },
+    { "key": "alerta_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 - Health (público)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/health"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('API responde', function () { pm.response.to.have.status(200); });",
+          "pm.test('Health tiene estado OK', function () { pm.expect(pm.response.json().status).to.eql('ok'); });"
+        ]}
+      }]
+    },
+    {
+      "name": "02 - Hello World (público)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/hello"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Hello responde Hello World', function () { pm.response.to.have.status(200); pm.expect(pm.response.text()).to.eql('Hello World'); });"
+        ]}
+      }]
+    },
+    {
+      "name": "02 - Registrar usuario",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"María González\",\n  \"correo\": \"{{correo}}\",\n  \"password\": \"{{password}}\",\n  \"tipo\": \"estudiante\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/usuarios"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Usuario creado', function () { pm.response.to.have.status(201); });",
+          "const body = pm.response.json();",
+          "pm.expect(body).not.to.have.property('password_hash');",
+          "pm.collectionVariables.set('usuario_id', body.id);",
+          "pm.collectionVariables.set('codigo_usuario', body.codigo_unico);"
+        ]}
+      }]
+    },
+    {
+      "name": "03 - Iniciar sesión",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"correo\": \"{{correo}}\",\n  \"password\": \"{{password}}\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Login correcto', function () { pm.response.to.have.status(200); });",
+          "const body = pm.response.json();",
+          "pm.collectionVariables.set('access_token', body.access_token);",
+          "pm.collectionVariables.set('usuario_id', body.usuario.id);",
+          "pm.collectionVariables.set('codigo_usuario', body.usuario.codigo_unico);",
+          "pm.expect(body.expires_in).to.eql(1800);"
+        ]}
+      }]
+    },
+    {
+      "name": "04 - Registrar segundo usuario de prueba (miembro de la red)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Contacto Demo\",\n  \"correo\": \"{{helper_email}}\",\n  \"password\": \"{{helper_password}}\",\n  \"tipo\": \"red\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/usuarios"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Segundo usuario creado', function () { pm.response.to.have.status(201); });",
+          "const body = pm.response.json();",
+          "pm.collectionVariables.set('helper_user_id', body.id);",
+          "pm.collectionVariables.set('contact_code', body.codigo_unico);"
+        ]}
+      }]
+    },
+    {
+      "name": "05 - Iniciar sesión como miembro de la red",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"correo\": \"{{helper_email}}\",\n  \"password\": \"{{helper_password}}\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/auth/login"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Login del contacto correcto', function () { pm.response.to.have.status(200); });",
+          "pm.collectionVariables.set('helper_access_token', pm.response.json().access_token);"
+        ]}
+      }]
+    },
+    {
+      "name": "06 - Actualizar mi perfil (Bearer)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"María González\",\n  \"ocupacion\": \"Estudiante y cuidadora\",\n  \"genero\": \"femenino\",\n  \"tipo\": \"estudiante\",\n  \"persona_cuidada_nombre\": \"Don Carlos\",\n  \"persona_cuidada_edad\": 82\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/perfil/me"
+      }
+    },
+    {
+      "name": "07 - Guardar check-in (Bearer)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"nivel\": \"algo_cansada\",\n  \"factores\": [\"dormir_mal\", \"clases\"],\n  \"nota\": \"Necesito un rato de descanso\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/checkins/usuarios/{{usuario_id}}"
+      }
+    },
+    {
+      "name": "08 - Consultar mis check-ins (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/checkins/usuarios/{{usuario_id}}?limit=100&offset=0"
+      }
+    },
+    {
+      "name": "09 - Consultar sugerencia preventiva de carga (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/checkins/tendencia"
+      }
+    },
+    {
+      "name": "10 - Añadir contacto por código Android (Bearer)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"codigo_unico\": \"{{contact_code}}\",\n  \"relacion\": \"Tía\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/contactos/usuarios/{{usuario_id}}/por-codigo"
+      }
+    },
+    {
+      "name": "11 - Consultar mi red (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/contactos/usuarios/{{usuario_id}}?limit=100&offset=0"
+      }
+    },
+    {
+      "name": "12 - Consultar balance de Mi Red (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/contactos/usuarios/{{usuario_id}}/balance"
+      }
+    },
+    {
+      "name": "13 - Crear solicitud de relevo (Bearer)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"titulo\": \"Relevo para descansar\",\n  \"tipo\": \"casa\",\n  \"descripcion\": \"Necesito una hora para descansar\",\n  \"fecha\": \"2099-01-01\",\n  \"hora_inicio\": \"17:00\",\n  \"hora_fin\": \"18:00\",\n  \"solicitante_id\": {{usuario_id}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/relevos"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "if (pm.response.code === 201) pm.collectionVariables.set('relevo_id', pm.response.json().id);"
+        ]}
+      }]
+    },
+    {
+      "name": "14 - Consultar mi calendario/relevos (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/relevos/usuarios/{{usuario_id}}?limit=100&offset=0"
+      }
+    },
+    {
+      "name": "15 - Consultar horas protegidas esta semana (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/relevos/resumen/semana"
+      }
+    },
+    {
+      "name": "16 - Activar SOS (Bearer)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"mensaje\": \"Necesito apoyo ahora\",\n  \"usuario_id\": {{usuario_id}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/sos"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "if (pm.response.code === 201) pm.collectionVariables.set('alerta_id', pm.response.json().id);"
+        ]}
+      }]
+    },
+    {
+      "name": "17 - Consultar mis alertas (Bearer)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/sos/usuarios/{{usuario_id}}?limit=100&offset=0"
+      }
+    },
+    {
+      "name": "18 - Consultar SOS recibidas por mi red (Bearer del contacto)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{helper_access_token}}" }],
+        "url": "{{base_url}}/api/v1/sos/recibidas?limit=100&offset=0"
+      }
+    },
+    {
+      "name": "19 - Verificar que una consulta sin Bearer se rechaza (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/api/v1/checkins/usuarios/{{usuario_id}}"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Sin bearer devuelve 401', function () { pm.response.to.have.status(401); });"
+        ]}
+      }]
+    },
+    {
+      "name": "20 - Aceptar relevo (como integrante de la red)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{helper_access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"estado\": \"aceptada\",\n  \"cuidador_id\": {{helper_user_id}}\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/relevos/{{relevo_id}}"
+      }
+    },
+    {
+      "name": "21 - Completar relevo (como cuidador asignado)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{helper_access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"estado\": \"completada\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/relevos/{{relevo_id}}"
+      }
+    },
+    {
+      "name": "22 - Atender SOS de contacto de la red",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{helper_access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"estado\": \"atendida\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/sos/{{alerta_id}}"
+      }
+    },
+    {
+      "name": "23 - Cerrar SOS propia (como titular)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"estado\": \"cerrada\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/sos/{{alerta_id}}"
+      }
+    }
+  ]
+}
