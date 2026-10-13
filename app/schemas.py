@@ -58,6 +58,10 @@ class UsuarioOut(BaseModel):
         return codigo
 
 
+class RegistroOut(UsuarioOut):
+    detail: str = "Cuenta creada correctamente"
+
+
 # ---------- Mi carga / Check-in ----------
 
 class CheckInIn(BaseModel):
@@ -253,6 +257,11 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     usuario: UsuarioOut
+    detail: str = "Inicio de sesión correcto"
+
+
+class LogoutOut(BaseModel):
+    detail: str
 
 
 class PerfilUpdate(BaseModel):

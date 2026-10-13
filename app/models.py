@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.orm import relationship
 
 from .database import Base
@@ -26,6 +26,12 @@ class Usuario(Base):
     nombre = Column(String(80), nullable=False)
     correo = Column(String(120), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=True)
+    token_version = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default=text("0"),
+    )
     ocupacion = Column(String(100), nullable=True)
     tipo = Column(
         String(20),

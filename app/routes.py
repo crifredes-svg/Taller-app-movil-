@@ -86,7 +86,7 @@ def _dias_de_alta_carga(checkins, hoy: date) -> int:
 
 @router_usuarios.post(
     "",
-    response_model=schemas.UsuarioOut,
+    response_model=schemas.RegistroOut,
     status_code=status.HTTP_201_CREATED,
 )
 def crear_usuario(
@@ -141,10 +141,23 @@ def iniciar_sesion(
         )
 
     return schemas.TokenOut(
-        access_token=create_access_token(usuario.id),
+        access_token=create_access_token(usuario.id, usuario.token_version),
         expires_in=ACCESS_TOKEN_SECONDS,
         usuario=usuario,
     )
+
+
+@router_auth.post(
+    "/logout",
+    response_model=schemas.LogoutOut,
+)
+def cerrar_sesion(
+    current_user: models.Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.token_version += 1
+    _commit_or_conflict(db, "No se pudo cerrar la sesión")
+    return schemas.LogoutOut(detail="Sesión cerrada correctamente")
 
 
 @router_perfil.patch(

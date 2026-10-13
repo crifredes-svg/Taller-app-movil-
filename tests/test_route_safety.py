@@ -255,6 +255,7 @@ def _login_test_user(client, email="persona@example.com"):
 def test_flujo_registro_duplicado_login_y_acceso_protegido(api_client):
     created = _register_test_user(api_client)
     assert created.status_code == 201
+    assert created.json()["detail"] == "Cuenta creada correctamente"
     assert "password_hash" not in created.json()
     assert created.json()["codigo_unico"].startswith("RC-")
 
@@ -284,6 +285,7 @@ def test_flujo_registro_duplicado_login_y_acceso_protegido(api_client):
 
     login = _login_test_user(api_client)
     assert login.status_code == 200
+    assert login.json()["detail"] == "Inicio de sesión correcto"
     token = login.json()["access_token"]
     assert login.json()["usuario"]["correo"] == "persona@example.com"
     authorized = api_client.get(
@@ -292,6 +294,86 @@ def test_flujo_registro_duplicado_login_y_acceso_protegido(api_client):
     )
     assert authorized.status_code == 200
     assert authorized.json() == []
+
+
+def test_registro_completo_con_campos_opcionales(api_client):
+    response = api_client.post(
+        "/api/v1/usuarios",
+        json={
+            "nombre": "María González",
+            "correo": "maria.ejemplo@correo.cl",
+            "password": "EjemploSeguro123",
+            "genero": "femenino",
+            "ocupacion": "Estudiante y cuidadora",
+            "persona_cuidada_nombre": "Carlos",
+            "persona_cuidada_edad": 82,
+        },
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["codigo_unico"].startswith("RC-")
+    assert body["genero"] == "femenino"
+    assert body["persona_cuidada_edad"] == 82
+    assert "password" not in body and "password_hash" not in body
+
+
+def test_registro_invalido_devuelve_422(api_client):
+    base = {
+        "nombre": "María González",
+        "correo": "maria.ejemplo@correo.cl",
+        "password": "EjemploSeguro123",
+    }
+    for cambio in (
+        {"password": "corta"},
+        {"genero": "otro"},
+        {"correo": "no-es-correo"},
+    ):
+        response = api_client.post("/api/v1/usuarios", json={**base, **cambio})
+        assert response.status_code == 422, cambio
+
+
+def test_logout_revoca_el_token_y_devuelve_confirmacion(api_client):
+    created = _register_test_user(api_client)
+    token = _login_test_user(api_client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    protected_url = f"/api/v1/checkins/usuarios/{created.json()['id']}"
+
+    assert api_client.get(protected_url, headers=headers).status_code == 200
+
+    logout = api_client.post("/api/v1/auth/logout", headers=headers)
+    assert logout.status_code == 200
+    assert logout.json() == {"detail": "Sesión cerrada correctamente"}
+
+    assert api_client.get(protected_url, headers=headers).status_code == 401
+    assert api_client.post("/api/v1/auth/logout", headers=headers).status_code == 401
+
+
+def test_logout_sin_token_devuelve_401(api_client):
+    response = api_client.post("/api/v1/auth/logout")
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+
+
+def test_token_vencido_devuelve_401(api_client):
+    from datetime import datetime, timedelta, timezone
+    import os
+
+    from jose import jwt
+
+    token = jwt.encode(
+        {
+            "sub": "1",
+            "ver": 0,
+            "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
+        },
+        os.environ["JWT_SECRET"],
+        algorithm="HS256",
+    )
+    response = api_client.get(
+        "/api/v1/checkins/usuarios/1",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 401
 
 
 def test_perfil_actualiza_solo_al_usuario_autenticado(api_client):

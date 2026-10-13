@@ -40,11 +40,15 @@ def verify_password(password: str, password_hash: str | None) -> bool:
     return password_hasher.verify(password, password_hash)
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, token_version: int = 0) -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(
         seconds=ACCESS_TOKEN_SECONDS
     )
-    claims = {"sub": str(user_id), "exp": expires_at}
+    claims = {
+        "sub": str(user_id),
+        "ver": token_version,
+        "exp": expires_at,
+    }
     return jwt.encode(claims, _jwt_secret(), algorithm=JWT_ALGORITHM)
 
 
@@ -69,11 +73,14 @@ def get_current_user(
         subject = claims.get("sub")
         if not isinstance(subject, str) or not subject.isdecimal():
             raise unauthorized
+        token_version = claims.get("ver", 0)
+        if type(token_version) is not int or token_version < 0:
+            raise unauthorized
         user_id = int(subject)
     except (JWTError, RuntimeError, ValueError) as exc:
         raise unauthorized from exc
 
     user = db.get(models.Usuario, user_id)
-    if user is None:
+    if user is None or user.token_version != token_version:
         raise unauthorized
     return user
