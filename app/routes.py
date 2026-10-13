@@ -86,7 +86,7 @@ def _dias_de_alta_carga(checkins, hoy: date) -> int:
 
 @router_usuarios.post(
     "",
-    response_model=schemas.UsuarioOut,
+    response_model=schemas.RegistroOut,
     status_code=status.HTTP_201_CREATED,
 )
 def crear_usuario(
@@ -141,10 +141,38 @@ def iniciar_sesion(
         )
 
     return schemas.TokenOut(
-        access_token=create_access_token(usuario.id),
+        access_token=create_access_token(usuario.id, usuario.token_version),
         expires_in=ACCESS_TOKEN_SECONDS,
         usuario=usuario,
     )
+
+
+@router_auth.post(
+    "/logout",
+    response_model=schemas.LogoutOut,
+)
+def cerrar_sesion(
+    current_user: models.Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # El incremento se resuelve en SQL para que logouts concurrentes no pierdan versiones.
+    actualizadas = (
+        db.query(models.Usuario)
+        .filter(models.Usuario.id == current_user.id)
+        .update(
+            {models.Usuario.token_version: models.Usuario.token_version + 1},
+            synchronize_session=False,
+        )
+    )
+    if actualizadas != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticación requerida o token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    _commit_or_conflict(db, "No se pudo cerrar la sesión")
+    return schemas.LogoutOut(detail="Sesión cerrada correctamente")
 
 
 @router_perfil.patch(

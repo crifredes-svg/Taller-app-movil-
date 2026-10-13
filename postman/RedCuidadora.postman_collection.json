@@ -9,6 +9,7 @@
     { "key": "correo", "value": "" },
     { "key": "password", "value": "" },
     { "key": "access_token", "value": "" },
+    { "key": "revoked_token", "value": "" },
     { "key": "usuario_id", "value": "" },
     { "key": "contact_code", "value": "" },
     { "key": "helper_email", "value": "" },
@@ -61,6 +62,7 @@
         "script": { "type": "text/javascript", "exec": [
           "pm.test('Usuario creado', function () { pm.response.to.have.status(201); });",
           "const body = pm.response.json();",
+          "pm.expect(body.detail).to.eql('Cuenta creada correctamente');",
           "pm.expect(body).not.to.have.property('password_hash');",
           "pm.collectionVariables.set('usuario_id', body.id);",
           "pm.collectionVariables.set('codigo_usuario', body.codigo_unico);"
@@ -80,6 +82,7 @@
         "script": { "type": "text/javascript", "exec": [
           "pm.test('Login correcto', function () { pm.response.to.have.status(200); });",
           "const body = pm.response.json();",
+          "pm.expect(body.detail).to.eql('Inicio de sesión correcto');",
           "pm.collectionVariables.set('access_token', body.access_token);",
           "pm.collectionVariables.set('usuario_id', body.usuario.id);",
           "pm.collectionVariables.set('codigo_usuario', body.usuario.codigo_unico);",
@@ -317,6 +320,44 @@
         ],
         "body": { "mode": "raw", "raw": "{\n  \"estado\": \"cerrada\"\n}", "options": { "raw": { "language": "json" } } },
         "url": "{{base_url}}/api/v1/sos/{{alerta_id}}"
+      }
+    },
+    {
+      "name": "24 - Cerrar sesión (revoca el token en el servidor)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.collectionVariables.set('revoked_token', pm.collectionVariables.get('access_token'));"
+          ]}
+        },
+        {
+          "listen": "test",
+          "script": { "type": "text/javascript", "exec": [
+            "pm.test('Logout confirma cierre', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().detail).to.eql('Sesión cerrada correctamente'); });",
+            "pm.collectionVariables.unset('access_token');"
+          ]}
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/api/v1/auth/logout"
+      }
+    },
+    {
+      "name": "25 - Verificar que el token revocado recibe 401",
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Token revocado deja de autorizar', function () { pm.response.to.have.status(401); });",
+          "pm.collectionVariables.unset('revoked_token');"
+        ]}
+      }],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{revoked_token}}" }],
+        "url": "{{base_url}}/api/v1/checkins/usuarios/{{usuario_id}}"
       }
     }
   ]
