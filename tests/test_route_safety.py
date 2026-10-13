@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 import asyncio
 import json
+import re
 
 import pytest
 from fastapi import HTTPException
@@ -257,7 +258,7 @@ def test_flujo_registro_duplicado_login_y_acceso_protegido(api_client):
     assert created.status_code == 201
     assert created.json()["detail"] == "Cuenta creada correctamente"
     assert "password_hash" not in created.json()
-    assert created.json()["codigo_unico"].startswith("RC-")
+    assert re.fullmatch(r"RC-[0-9A-F]{6}", created.json()["codigo_unico"])
 
     duplicate = _register_test_user(api_client)
     assert duplicate.status_code == 400
@@ -311,7 +312,8 @@ def test_registro_completo_con_campos_opcionales(api_client):
     )
     assert response.status_code == 201
     body = response.json()
-    assert body["codigo_unico"].startswith("RC-")
+    assert re.fullmatch(r"RC-[0-9A-F]{6}", body["codigo_unico"])
+    assert body["tipo"] == "estudiante"
     assert body["genero"] == "femenino"
     assert body["persona_cuidada_edad"] == 82
     assert "password" not in body and "password_hash" not in body
@@ -330,6 +332,120 @@ def test_registro_invalido_devuelve_422(api_client):
     ):
         response = api_client.post("/api/v1/usuarios", json={**base, **cambio})
         assert response.status_code == 422, cambio
+
+
+def test_registro_con_genero_masculino_y_sin_genero(api_client):
+    base = {
+        "nombre": "Pedro Soto",
+        "password": "EjemploSeguro123",
+    }
+    masculino = api_client.post(
+        "/api/v1/usuarios",
+        json={**base, "correo": "pedro@correo.cl", "genero": "masculino"},
+    )
+    assert masculino.status_code == 201
+    assert masculino.json()["genero"] == "masculino"
+
+    sin_genero = api_client.post(
+        "/api/v1/usuarios",
+        json={**base, "correo": "sin.genero@correo.cl"},
+    )
+    assert sin_genero.status_code == 201
+    assert sin_genero.json()["genero"] is None
+    assert sin_genero.json()["persona_cuidada_nombre"] is None
+
+
+@pytest.mark.parametrize("edad", [-1, 131])
+def test_registro_con_edad_fuera_de_rango_devuelve_422(api_client, edad):
+    response = api_client.post(
+        "/api/v1/usuarios",
+        json={
+            "nombre": "María González",
+            "correo": "maria.ejemplo@correo.cl",
+            "password": "EjemploSeguro123",
+            "persona_cuidada_nombre": "Carlos",
+            "persona_cuidada_edad": edad,
+        },
+    )
+    assert response.status_code == 422
+
+
+def test_login_posterior_al_logout_emite_token_que_funciona(api_client):
+    created = _register_test_user(api_client)
+    url = f"/api/v1/checkins/usuarios/{created.json()['id']}"
+    viejo = _login_test_user(api_client).json()["access_token"]
+    viejo_headers = {"Authorization": f"Bearer {viejo}"}
+
+    assert api_client.post("/api/v1/auth/logout", headers=viejo_headers).status_code == 200
+
+    nuevo = _login_test_user(api_client)
+    assert nuevo.status_code == 200
+    nuevo_headers = {"Authorization": f"Bearer {nuevo.json()['access_token']}"}
+    assert api_client.get(url, headers=nuevo_headers).status_code == 200
+    assert api_client.get(url, headers=viejo_headers).status_code == 401
+
+
+def test_logout_incrementa_la_version_una_vez_por_cierre(api_client):
+    from app.models import Usuario
+
+    created = _register_test_user(api_client)
+    user_id = created.json()["id"]
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        for esperado in (1, 2):
+            token = _login_test_user(api_client).json()["access_token"]
+            headers = {"Authorization": f"Bearer {token}"}
+            assert api_client.post("/api/v1/auth/logout", headers=headers).status_code == 200
+            db.expire_all()
+            assert db.get(Usuario, user_id).token_version == esperado
+    finally:
+        gen.close()
+
+
+def test_token_de_usuario_eliminado_devuelve_401(api_client):
+    from app.models import Usuario
+
+    created = _register_test_user(api_client)
+    user_id = created.json()["id"]
+    token = _login_test_user(api_client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        db.delete(db.get(Usuario, user_id))
+        db.commit()
+    finally:
+        gen.close()
+
+    protected = api_client.get(f"/api/v1/checkins/usuarios/{user_id}", headers=headers)
+    assert protected.status_code == 401
+    assert api_client.post("/api/v1/auth/logout", headers=headers).status_code == 401
+
+
+def test_token_sin_claim_ver_se_trata_como_version_cero(api_client):
+    import os
+    from datetime import datetime, timedelta, timezone
+
+    from jose import jwt
+
+    created = _register_test_user(api_client)
+    user_id = created.json()["id"]
+    token = jwt.encode(
+        {
+            "sub": str(user_id),
+            "exp": datetime.now(timezone.utc) + timedelta(minutes=5),
+        },
+        os.environ["JWT_SECRET"],
+        algorithm="HS256",
+    )
+    headers = {"Authorization": f"Bearer {token}"}
+    url = f"/api/v1/checkins/usuarios/{user_id}"
+    assert api_client.get(url, headers=headers).status_code == 200
+
+    assert api_client.post("/api/v1/auth/logout", headers=headers).status_code == 200
+    assert api_client.get(url, headers=headers).status_code == 401
 
 
 def test_logout_revoca_el_token_y_devuelve_confirmacion(api_client):

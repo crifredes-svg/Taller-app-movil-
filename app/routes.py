@@ -155,7 +155,22 @@ def cerrar_sesion(
     current_user: models.Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    current_user.token_version += 1
+    # El incremento se resuelve en SQL para que logouts concurrentes no pierdan versiones.
+    actualizadas = (
+        db.query(models.Usuario)
+        .filter(models.Usuario.id == current_user.id)
+        .update(
+            {models.Usuario.token_version: models.Usuario.token_version + 1},
+            synchronize_session=False,
+        )
+    )
+    if actualizadas != 1:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticación requerida o token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     _commit_or_conflict(db, "No se pudo cerrar la sesión")
     return schemas.LogoutOut(detail="Sesión cerrada correctamente")
 
