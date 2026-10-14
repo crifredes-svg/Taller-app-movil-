@@ -367,7 +367,7 @@
         errorLine2="     ~~~~~~~~~~~">
         <location
             file="C:\Users\DiegoHombre\StudioProjects\Taller-app-movil-\app\src\main\AndroidManifest.xml"
-            line="4"
+            line="8"
             column="6"/>
     </issue>
 

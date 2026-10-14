@@ -47,7 +47,7 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun CrearSolicitudScreen(
     onNavigateBack: () -> Unit,
-    showPreviewErrorBanner: Boolean = true
+    showPreviewErrorBanner: Boolean = true,
 ) {
     val context = LocalContext.current
     var titulo by remember { mutableStateOf("Relevo para clases presenciales") }
@@ -61,20 +61,20 @@ fun CrearSolicitudScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         // Top Navigation Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = TextPrimaryDark
+                    tint = TextPrimaryDark,
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -82,7 +82,7 @@ fun CrearSolicitudScreen(
                 text = "Hacer Solicitud de Relevo",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -92,7 +92,7 @@ fun CrearSolicitudScreen(
             text = "Motivo / Título de la solicitud",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
@@ -107,8 +107,8 @@ fun CrearSolicitudScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -117,7 +117,7 @@ fun CrearSolicitudScreen(
             text = "Horario y fecha requerida",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
@@ -132,8 +132,8 @@ fun CrearSolicitudScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -142,7 +142,7 @@ fun CrearSolicitudScreen(
             text = "Detalles adicionales para tu red",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
@@ -159,8 +159,8 @@ fun CrearSolicitudScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -177,13 +177,13 @@ fun CrearSolicitudScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(14.dp),
         ) {
             Text(
                 text = "Publicar Solicitud de Relevo",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -193,7 +193,7 @@ fun CrearSolicitudScreen(
         if (showErrorBanner) {
             StatusNotificationBanner(
                 message = "Hubo un error y no se mandó la solicitud",
-                isSuccess = false
+                isSuccess = false,
             )
         }
 

@@ -21,6 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.redcuidadora.app.data.local.TokenManager
 import com.redcuidadora.app.ui.components.ActionChoiceBottomSheet
 import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
 import com.redcuidadora.app.ui.navigation.Screen
@@ -29,6 +30,7 @@ import com.redcuidadora.app.ui.screens.CalendarioScreen
 import com.redcuidadora.app.ui.screens.CheckInScreen
 import com.redcuidadora.app.ui.screens.CrearSolicitudScreen
 import com.redcuidadora.app.ui.screens.HomeScreen
+import com.redcuidadora.app.ui.screens.LoginScreen
 import com.redcuidadora.app.ui.screens.PerfilScreen
 import com.redcuidadora.app.ui.screens.RedScreen
 import com.redcuidadora.app.ui.screens.SolicitudesScreen
@@ -45,15 +47,20 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                var showActionChoiceSheet by remember { mutableStateOf(false) }
+                var showActionChoiceSheet by remember { mutableStateOf(value = false) }
 
-                // Hide bottom bar on detail/form screens
+                // Hide bottom bar on detail/form/auth screens
                 val hideBottomBarRoutes = listOf(
+                    Screen.Login.route,
                     Screen.Perfil.route,
                     Screen.AnadirContacto.route,
-                    Screen.CrearSolicitud.route
+                    Screen.CrearSolicitud.route,
                 )
                 val shouldShowBottomBar = currentRoute !in hideBottomBarRoutes
+
+                val startRoute = remember {
+                    if (TokenManager.isLoggedIn(this@MainActivity)) Screen.Home.route else Screen.Login.route
+                }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -69,22 +76,31 @@ class MainActivity : ComponentActivity() {
                                         launchSingleTop = true
                                         restoreState = true
                                     }
-                                }
+                                },
                             )
                         }
                     },
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.background,
                 ) { innerPadding ->
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.background)
-                            .padding(if (shouldShowBottomBar) innerPadding else PaddingValues())
+                            .padding(if (shouldShowBottomBar) innerPadding else PaddingValues()),
                     ) {
                         NavHost(
                             navController = navController,
-                            startDestination = Screen.Home.route
+                            startDestination = startRoute,
                         ) {
+                            composable(Screen.Login.route) {
+                                LoginScreen(
+                                    onLoginSuccess = {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(Screen.Login.route) { inclusive = true }
+                                        }
+                                    },
+                                )
+                            }
                             composable(Screen.Home.route) {
                                 HomeScreen(
                                     onNavigateToSolicitudes = {
@@ -95,21 +111,21 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onNavigateToPerfil = {
                                         navController.navigate(Screen.Perfil.route)
-                                    }
+                                    },
                                 )
                             }
                             composable(Screen.MiCarga.route) {
                                 CheckInScreen(
                                     onNavigateBack = {
                                         navController.popBackStack()
-                                    }
+                                    },
                                 )
                             }
                             composable(Screen.Solicitudes.route) {
                                 SolicitudesScreen(
                                     onOpenActionChoice = {
                                         showActionChoiceSheet = true
-                                    }
+                                    },
                                 )
                             }
                             composable(Screen.MiRed.route) {
@@ -119,28 +135,33 @@ class MainActivity : ComponentActivity() {
                                 CalendarioScreen(
                                     onNavigateToSolicitudes = {
                                         navController.navigate(Screen.Solicitudes.route)
-                                    }
+                                    },
                                 )
                             }
                             composable(Screen.Perfil.route) {
                                 PerfilScreen(
                                     onNavigateBack = {
                                         navController.popBackStack()
-                                    }
+                                    },
+                                    onLogoutConfirmed = {
+                                        navController.navigate(Screen.Login.route) {
+                                            popUpTo(Screen.Home.route) { inclusive = true }
+                                        }
+                                    },
                                 )
                             }
                             composable(Screen.AnadirContacto.route) {
                                 AnadirContactoScreen(
                                     onNavigateBack = {
                                         navController.popBackStack()
-                                    }
+                                    },
                                 )
                             }
                             composable(Screen.CrearSolicitud.route) {
                                 CrearSolicitudScreen(
                                     onNavigateBack = {
                                         navController.popBackStack()
-                                    }
+                                    },
                                 )
                             }
                         }
@@ -154,7 +175,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onSelectCreateRequest = {
                                     navController.navigate(Screen.CrearSolicitud.route)
-                                }
+                                },
                             )
                         }
                     }

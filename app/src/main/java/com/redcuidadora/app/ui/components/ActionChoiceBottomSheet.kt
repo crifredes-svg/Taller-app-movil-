@@ -34,7 +34,6 @@ import com.redcuidadora.app.ui.theme.DarkSurfaceVariant
 import com.redcuidadora.app.ui.theme.PrimaryEmerald
 import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import com.redcuidadora.app.ui.theme.TextPrimaryDark
-import com.redcuidadora.app.ui.theme.TextSecondaryDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +41,7 @@ fun ActionChoiceBottomSheet(
     onDismissRequest: () -> Unit,
     onSelectAddContact: () -> Unit,
     onSelectCreateRequest: () -> Unit,
-    sheetState: SheetState = rememberModalBottomSheetState()
+    sheetState: SheetState = rememberModalBottomSheetState(),
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,

@@ -34,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +48,7 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun AnadirContactoScreen(
     onNavigateBack: () -> Unit,
-    showPreviewSuccessBanner: Boolean = true
+    showPreviewSuccessBanner: Boolean = true,
 ) {
     val context = LocalContext.current
     var codigoContacto by remember { mutableStateOf("RC-8F3A92") }
@@ -62,20 +61,20 @@ fun AnadirContactoScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         // Top Navigation Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = TextPrimaryDark
+                    tint = TextPrimaryDark,
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -83,7 +82,7 @@ fun AnadirContactoScreen(
                 text = "Añadir Contacto a tu Red",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -93,12 +92,12 @@ fun AnadirContactoScreen(
             text = "Código único de la persona",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
         Text(
             text = "Ingresa el código alfanumérico que te compartió la otra persona (ej. RC-8F3A92)",
             fontSize = 12.sp,
-            color = TextSecondaryDark
+            color = TextSecondaryDark,
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -111,7 +110,7 @@ fun AnadirContactoScreen(
                 Icon(
                     imageVector = Icons.Default.QrCodeScanner,
                     contentDescription = "Código",
-                    tint = PrimaryEmerald
+                    tint = PrimaryEmerald,
                 )
             },
             colors = OutlinedTextFieldDefaults.colors(
@@ -120,8 +119,8 @@ fun AnadirContactoScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -130,12 +129,12 @@ fun AnadirContactoScreen(
             text = "Relación que tiene contigo",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
         Text(
             text = "Define qué es esta persona para ti (ej. Tía, Compañero de carrera, Vecina, Hermano)",
             fontSize = 12.sp,
-            color = TextSecondaryDark
+            color = TextSecondaryDark,
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -150,11 +149,11 @@ fun AnadirContactoScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
@@ -168,13 +167,13 @@ fun AnadirContactoScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(14.dp),
         ) {
             Text(
                 text = "Vincular a mi Red de Confianza",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -184,7 +183,7 @@ fun AnadirContactoScreen(
         if (showSuccessBanner) {
             StatusNotificationBanner(
                 message = "Se añadió el contacto a tu red de confianza",
-                isSuccess = true
+                isSuccess = true,
             )
         }
 

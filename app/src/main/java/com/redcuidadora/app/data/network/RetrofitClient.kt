@@ -1,5 +1,6 @@
 package com.redcuidadora.app.data.network
 
+import android.content.Context
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,26 +9,41 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    // Configurado al puerto 9000 (10.0.2.2 apunta a localhost desde el emulador de Android)
-    private const val BASE_URL = "http://10.0.2.2:9000/"
+    private var apiServiceInstance: ApiService? = null
 
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
+    fun getApiService(context: Context): ApiService {
+        return apiServiceInstance ?: synchronized(this) {
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
-        .build()
+            val okHttpClient = OkHttpClient.Builder()
+                .addInterceptor(AuthInterceptor(context.applicationContext))
+                .addInterceptor(loggingInterceptor)
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .writeTimeout(15, TimeUnit.SECONDS)
+                .build()
 
-    val apiService: ApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ApiService::class.java)
+            val baseUrlRaw = try {
+                val buildConfigClass = Class.forName("com.redcuidadora.app.BuildConfig")
+                val field = buildConfigClass.getField("BASE_URL")
+                ((field[null] as? String) ?: "https://simultaneously-propecia-dimensional-senators.trycloudflare.com/")
+            } catch (_: Exception) {
+                "https://simultaneously-propecia-dimensional-senators.trycloudflare.com/"
+            }
+
+            val baseUrl = if (baseUrlRaw.endsWith("/")) baseUrlRaw else "$baseUrlRaw/"
+
+            val retrofit = Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .client(okHttpClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+
+            val instance = retrofit.create(ApiService::class.java)
+            apiServiceInstance = instance
+            instance
+        }
     }
 }

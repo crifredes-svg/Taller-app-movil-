@@ -8,31 +8,49 @@ import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-// DTO Models matching FastAPI Schemas
+// Auth DTOs
+data class LoginInDto(
+    val correo: String,
+    val password: String,
+)
+
+data class TokenOutDto(
+    @SerializedName("access_token") val accessToken: String,
+    @SerializedName("token_type") val tokenType: String = "bearer",
+    @SerializedName("expires_in") val expiresIn: Int = 1800,
+    val usuario: UsuarioDto,
+)
+
+// Usuario DTO
 data class UsuarioDto(
     val id: Int? = null,
     val nombre: String,
     val correo: String,
-    @SerializedName("rol_general") val rolGeneral: String? = null,
-    @SerializedName("persona_a_cargo") val personaACargo: String? = null,
+    val password: String? = null,
+    val ocupacion: String? = null,
+    val tipo: String? = "estudiante",
     val genero: String? = null,
     @SerializedName("codigo_unico") val codigoUnico: String? = null,
+    @SerializedName("persona_cuidada_nombre") val personaCuidadaNombre: String? = null,
+    @SerializedName("persona_cuidada_edad") val personaCuidadaEdad: Int? = null,
 )
 
+// Check-in DTO
 data class CheckInDto(
     val id: Int? = null,
     @SerializedName("usuario_id") val usuarioId: Int? = null,
-    @SerializedName("nivel_sobrecarga") val nivelSobrecarga: String,
-    val factores: List<String>? = emptyList(),
-    val notas: String? = null,
+    val nivel: String, // "bien" | "algo_cansada" | "necesito_apoyo" | "sobrepasada"
+    val factores: String? = null,
+    val nota: String? = null,
     val fecha: String? = null,
 )
 
+// Contacto DTOs
 data class ContactoPorCodigoDto(
     @SerializedName("codigo_unico") val codigoUnico: String,
     val relacion: String,
-    val apoyos: List<String>? = emptyList(),
-    val disponibilidad: String? = null,
+    val apoyos: String? = "Apoyo general",
+    val disponibilidad: String? = "Disponible"
 )
 
 data class ContactoDto(
@@ -40,38 +58,47 @@ data class ContactoDto(
     @SerializedName("usuario_id") val usuarioId: Int? = null,
     val nombre: String,
     val relacion: String,
-    val apoyos: List<String>? = emptyList(),
+    val apoyos: String? = null,
     val disponibilidad: String? = null,
-    @SerializedName("contacto_usuario_id") val contactoUsuarioId: Int? = null,
+    @SerializedName("contacto_usuario_id") val contactoUsuarioId: Int? = null
 )
 
+// Solicitud Relevo DTO
 data class SolicitudRelevoDto(
     val id: Int? = null,
     @SerializedName("solicitante_id") val solicitanteId: Int,
     @SerializedName("cuidador_id") val cuidadorId: Int? = null,
     val titulo: String,
-    val fecha: String,
-    @SerializedName("hora_inicio") val horaInicio: String,
-    @SerializedName("hora_fin") val horaFin: String,
-    val detalles: String? = null,
-    val estado: String? = "pendiente",
+    val tipo: String, // "estudio" | "clases" | "compras" | "casa"
+    val descripcion: String,
+    val fecha: String, // YYYY-MM-DD
+    @SerializedName("hora_inicio") val horaInicio: String, // HH:MM
+    @SerializedName("hora_fin") val horaFin: String, // HH:MM
+    val estado: String? = "pendiente"
 )
 
 data class ActualizarEstadoRelevoDto(
-    val estado: String,
-    @SerializedName("cuidador_id") val cuidadorId: Int? = null,
+    val estado: String, // "pendiente" | "aceptada" | "completada"
+    @SerializedName("cuidador_id") val cuidadorId: Int? = null
 )
 
+// SOS DTO
 data class AlertaSOSDto(
     val id: Int? = null,
     @SerializedName("usuario_id") val usuarioId: Int,
-    val mensaje: String? = "Alerta SOS de emergencia activada",
-    val ubicacion: String? = null,
+    val mensaje: String = "Alerta SOS de emergencia activada",
     val estado: String? = "activa",
-    val fecha: String? = null,
+    val fecha: String? = null
 )
 
 interface ApiService {
+
+    // ---------- Autenticación ----------
+    @POST("api/v1/auth/login")
+    suspend fun iniciarSesion(@Body loginIn: LoginInDto): Response<TokenOutDto>
+
+    @PATCH("api/v1/perfil/me")
+    suspend fun actualizarMiPerfil(@Body perfilUpdate: UsuarioDto): Response<UsuarioDto>
 
     // ---------- Usuarios ----------
     @POST("api/v1/usuarios")

@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,9 +35,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,19 +52,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.redcuidadora.app.data.local.TokenManager
 import com.redcuidadora.app.ui.components.Gender
 import com.redcuidadora.app.ui.components.GenderToggle
 import com.redcuidadora.app.ui.theme.DarkSurface
 import com.redcuidadora.app.ui.theme.DarkSurfaceVariant
 import com.redcuidadora.app.ui.theme.PrimaryEmerald
 import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
-import com.redcuidadora.app.ui.theme.TextMutedDark
+import com.redcuidadora.app.ui.theme.StatusRed
 import com.redcuidadora.app.ui.theme.TextPrimaryDark
 import com.redcuidadora.app.ui.theme.TextSecondaryDark
 
 @Composable
 fun PerfilScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onLogoutConfirmed: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -69,8 +75,47 @@ fun PerfilScreen(
     var personaACargo by remember { mutableStateOf("Don Carlos (82 años)") }
     var genero by remember { mutableStateOf(Gender.FEMALE) }
 
+    var showLogoutDialog by remember { mutableStateOf(value = false) }
+
     // Generado único y aleatorio
-    val userCode = remember { "RC-" + ("0123456789ABCDEF".toList().shuffled().take(6).joinToString("")) }
+    val userCode = remember {
+        val chars = "0123456789ABCDEF"
+        "RC-" + List(6) { chars.random() }.joinToString("")
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(text = "Cerrar sesión", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(text = "¿Estás segura de que deseas cerrar tu sesión en RedCuidadora?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        TokenManager.clearSession(context)
+                        onLogoutConfirmed()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusRed),
+                ) {
+                    Text(text = "Cerrar sesión")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                    },
+                ) {
+                    Text(text = "Cancelar", color = TextSecondaryDark)
+                }
+            },
+            containerColor = DarkSurface,
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -78,20 +123,20 @@ fun PerfilScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
     ) {
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Top Navigation Header
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = TextPrimaryDark
+                    tint = TextPrimaryDark,
                 )
             }
             Spacer(modifier = Modifier.width(8.dp))
@@ -99,68 +144,68 @@ fun PerfilScreen(
                 text = "Mis Datos / Mi Perfil",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Profile Avatar Header
         Box(
             modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(68.dp)
                     .background(DarkSurfaceVariant, CircleShape),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Avatar",
                     tint = PrimaryEmerald,
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(36.dp),
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Unique Alphanumeric Code Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.QrCode,
                         contentDescription = "Código",
                         tint = PrimaryEmerald,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                     Column {
                         Text(
                             text = "Mi Código Único de Red",
-                            fontSize = 12.sp,
-                            color = TextSecondaryDark
+                            fontSize = 11.sp,
+                            color = TextSecondaryDark,
                         )
                         Text(
                             text = userCode,
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryDark
+                            color = TextPrimaryDark,
                         )
                     }
                 }
@@ -171,42 +216,42 @@ fun PerfilScreen(
                         val clip = ClipData.newPlainText("Código RedCuidadora", userCode)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(context, "Código copiado: $userCode", Toast.LENGTH_SHORT).show()
-                    }
+                    },
                 ) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copiar código",
-                        tint = PrimaryEmerald
+                        tint = PrimaryEmerald,
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Gender Selector
         Text(
             text = "Género",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         GenderToggle(
             selectedGender = genero,
-            onGenderSelected = { genero = it }
+            onGenderSelected = { genero = it },
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // Input Fields
         Text(
             text = "Tu nombre completo",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = nombre,
             onValueChange = { nombre = it },
@@ -218,19 +263,19 @@ fun PerfilScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "Tu ocupación / rol principal",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = rolGeneral,
             onValueChange = { rolGeneral = it },
@@ -242,19 +287,19 @@ fun PerfilScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = "Persona que está a tu cuidado",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark
+            color = TextPrimaryDark,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = personaACargo,
             onValueChange = { personaACargo = it },
@@ -266,30 +311,56 @@ fun PerfilScreen(
                 focusedBorderColor = PrimaryEmerald,
                 unfocusedBorderColor = DarkSurfaceVariant,
                 focusedTextColor = TextPrimaryDark,
-                unfocusedTextColor = TextPrimaryDark
-            )
+                unfocusedTextColor = TextPrimaryDark,
+            ),
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        // Save Button
-        Button(
-            onClick = onNavigateBack,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
-            shape = RoundedCornerShape(14.dp)
+        // Action Buttons Row (Save & Logout side by side on tablet, stacked nicely on phone)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "Guardar mis datos",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextPrimaryDark,
-                fontWeight = FontWeight.Bold
-            )
+            // Save Button
+            Button(
+                onClick = onNavigateBack,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Text(
+                    text = "Guardar",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimaryDark,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+            }
+
+            // Logout Button
+            OutlinedButton(
+                onClick = { showLogoutDialog = true },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusRed),
+                border = BorderStroke(1.dp, StatusRed),
+            ) {
+                Text(
+                    text = "Cerrar sesión",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = StatusRed,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -297,7 +368,7 @@ fun PerfilScreen(
 @Composable
 fun PerfilScreenPreview() {
     RedCuidadoraTheme {
-        PerfilScreen(onNavigateBack = {})
+        PerfilScreen(onNavigateBack = {}, onLogoutConfirmed = {})
     }
 }
 
@@ -305,6 +376,6 @@ fun PerfilScreenPreview() {
 @Composable
 fun PerfilScreenTabletPreview() {
     RedCuidadoraTheme {
-        PerfilScreen(onNavigateBack = {})
+        PerfilScreen(onNavigateBack = {}, onLogoutConfirmed = {})
     }
 }

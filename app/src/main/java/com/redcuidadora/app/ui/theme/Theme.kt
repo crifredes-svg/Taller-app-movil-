@@ -24,28 +24,31 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = TextPrimaryDark,
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = TextSecondaryDark,
-    outline = OutlineDark
+    outline = OutlineDark,
 )
 
 @Composable
 fun RedCuidadoraTheme(
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = DarkColorScheme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            @Suppress("DEPRECATION")
             window.statusBarColor = DarkBackground.toArgb()
+            @Suppress("DEPRECATION")
             window.navigationBarColor = DarkSurface.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightNavigationBars = false
         }
     }
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
+        content = content,
     )
 }

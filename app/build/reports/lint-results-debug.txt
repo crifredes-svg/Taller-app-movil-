@@ -96,7 +96,7 @@ C:\Users\DiegoHombre\StudioProjects\Taller-app-movil-\app\src\main\java\com\redc
    Identifier: androidx.compose.runtime
    Feedback: https://issuetracker.google.com/issues/new?component=612128
 
-C:\Users\DiegoHombre\StudioProjects\Taller-app-movil-\app\src\main\AndroidManifest.xml:4: Warning: Should explicitly set android:icon, there is no default [MissingApplicationIcon]
+C:\Users\DiegoHombre\StudioProjects\Taller-app-movil-\app\src\main\AndroidManifest.xml:8: Warning: Should explicitly set android:icon, there is no default [MissingApplicationIcon]
     <application
      ~~~~~~~~~~~
 

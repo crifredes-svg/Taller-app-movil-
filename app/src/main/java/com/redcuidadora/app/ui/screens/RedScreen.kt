@@ -66,7 +66,7 @@ fun RedScreen() {
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -75,7 +75,7 @@ fun RedScreen() {
             text = "Mi Red de Confianza",
             style = MaterialTheme.typography.headlineLarge,
             color = TextPrimaryDark,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(16.dp))

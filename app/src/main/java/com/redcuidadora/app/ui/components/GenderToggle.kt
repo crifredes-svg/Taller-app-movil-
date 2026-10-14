@@ -36,13 +36,12 @@ enum class Gender {
 fun GenderToggle(
     selectedGender: Gender,
     onGenderSelected: (Gender) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val maleActiveColor = Color(0xFF2563EB) // Bright Male Blue
     val maleInactiveBg = Color(0xFF1E293B) // Dark Navy
     val femaleActiveColor = Color(0xFFEC4899) // Bright Female Pink
     val femaleInactiveBg = Color(0xFF311221) // Dark Pinkish Navy
-
     val mutedSymbolColor = Color(0xFF64748B)
 
     Row(
@@ -52,13 +51,13 @@ fun GenderToggle(
             .clip(RoundedCornerShape(16.dp))
             .background(DarkSurfaceVariant)
             .padding(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         // Male Side
         val isMale = selectedGender == Gender.MALE
         val maleBg by animateColorAsState(
             targetValue = if (isMale) maleActiveColor else maleInactiveBg,
-            label = "maleBg"
+            label = "maleBg",
         )
         val maleContentColor = if (isMale) Color.White else mutedSymbolColor
 
@@ -69,23 +68,23 @@ fun GenderToggle(
                 .clip(RoundedCornerShape(12.dp))
                 .background(maleBg)
                 .clickable { onGenderSelected(Gender.MALE) },
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Male,
                     contentDescription = "Masculino ♂",
                     tint = maleContentColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
                     text = "Hombre",
                     color = maleContentColor,
                     fontWeight = if (isMale) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 15.sp
+                    fontSize = 15.sp,
                 )
             }
         }
@@ -94,7 +93,7 @@ fun GenderToggle(
         val isFemale = selectedGender == Gender.FEMALE
         val femaleBg by animateColorAsState(
             targetValue = if (isFemale) femaleActiveColor else femaleInactiveBg,
-            label = "femaleBg"
+            label = "femaleBg",
         )
         val femaleContentColor = if (isFemale) Color.White else mutedSymbolColor
 
@@ -105,23 +104,23 @@ fun GenderToggle(
                 .clip(RoundedCornerShape(12.dp))
                 .background(femaleBg)
                 .clickable { onGenderSelected(Gender.FEMALE) },
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Female,
                     contentDescription = "Femenino ♀",
                     tint = femaleContentColor,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
                     text = "Mujer",
                     color = femaleContentColor,
                     fontWeight = if (isFemale) FontWeight.Bold else FontWeight.Normal,
-                    fontSize = 15.sp
+                    fontSize = 15.sp,
                 )
             }
         }

@@ -1,7 +1,6 @@
 package com.redcuidadora.app.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -65,10 +64,10 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 fun HomeScreen(
     onNavigateToSolicitudes: () -> Unit,
     onNavigateToCheckIn: () -> Unit,
-    onNavigateToPerfil: () -> Unit = {}
+    onNavigateToPerfil: () -> Unit = {},
 ) {
     var selectedMood by remember { mutableStateOf("Cansada") }
-    var showSosDialog by remember { mutableStateOf(false) }
+    var showSosDialog by remember { mutableStateOf(value = false) }
 
     if (showSosDialog) {
         AlertDialog(
@@ -361,15 +360,15 @@ fun HomeScreenPreview() {
             bottomBar = {
                 RedCuidadoraBottomNavigation(
                     currentRoute = Screen.Home.route,
-                    onNavigateToRoute = {}
+                    onNavigateToRoute = {},
                 )
             },
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background,
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding)) {
                 HomeScreen(
                     onNavigateToSolicitudes = {},
-                    onNavigateToCheckIn = {}
+                    onNavigateToCheckIn = {},
                 )
             }
         }
@@ -384,7 +383,7 @@ fun HomeScreenTabletPreview() {
             bottomBar = {
                 RedCuidadoraBottomNavigation(
                     currentRoute = Screen.Home.route,
-                    onNavigateToRoute = {}
+                    onNavigateToRoute = {},
                 )
             },
             containerColor = MaterialTheme.colorScheme.background

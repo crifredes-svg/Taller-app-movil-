@@ -31,7 +31,7 @@ import com.redcuidadora.app.ui.theme.TextPrimaryDark
 fun StatusNotificationBanner(
     message: String,
     isSuccess: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val borderColor = if (isSuccess) StatusGreen else StatusRed
     val icon = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error

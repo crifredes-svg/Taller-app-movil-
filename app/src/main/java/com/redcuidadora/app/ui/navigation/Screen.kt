@@ -19,62 +19,69 @@ sealed class Screen(
     val route: String,
     val title: String,
     val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val unselectedIcon: ImageVector,
 ) {
     object Home : Screen(
         route = "home",
         title = "Inicio",
         selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Outlined.Home
+        unselectedIcon = Icons.Outlined.Home,
     )
 
     object MiCarga : Screen(
         route = "mi_carga",
         title = "Mi Carga",
         selectedIcon = Icons.Filled.CheckCircle,
-        unselectedIcon = Icons.Outlined.CheckCircle
+        unselectedIcon = Icons.Outlined.CheckCircle,
     )
 
     object Solicitudes : Screen(
         route = "solicitudes",
         title = "Solicitudes",
         selectedIcon = Icons.Filled.Mail,
-        unselectedIcon = Icons.Outlined.Mail
+        unselectedIcon = Icons.Outlined.Mail,
     )
 
     object MiRed : Screen(
         route = "mi_red",
         title = "Mi Red",
         selectedIcon = Icons.Filled.People,
-        unselectedIcon = Icons.Outlined.People
+        unselectedIcon = Icons.Outlined.People,
     )
 
     object Calendario : Screen(
         route = "calendario",
         title = "Calendario",
         selectedIcon = Icons.Filled.CalendarMonth,
-        unselectedIcon = Icons.Outlined.CalendarMonth
+        unselectedIcon = Icons.Outlined.CalendarMonth,
     )
 
     object Perfil : Screen(
         route = "perfil",
         title = "Mis Datos",
         selectedIcon = Icons.Filled.Person,
-        unselectedIcon = Icons.Outlined.Person
+        unselectedIcon = Icons.Outlined.Person,
     )
 
     object AnadirContacto : Screen(
         route = "anadir_contacto",
         title = "Añadir Contacto",
         selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Outlined.Home
+        unselectedIcon = Icons.Outlined.Home,
     )
 
     object CrearSolicitud : Screen(
         route = "crear_solicitud",
         title = "Crear Solicitud",
         selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Outlined.Home
+        unselectedIcon = Icons.Outlined.Home,
+    )
+
+    object Login : Screen(
+        route = "login",
+        title = "Login",
+        selectedIcon = Icons.Filled.Home,
+        unselectedIcon = Icons.Outlined.Home,
     )
 }
 
@@ -84,5 +91,5 @@ val bottomNavScreens = listOf(
     Screen.Solicitudes,
     Screen.MiRed,
     Screen.Calendario,
-    Screen.Perfil
+    Screen.Perfil,
 )
