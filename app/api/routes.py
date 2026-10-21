@@ -1,0 +1,35 @@
+"""Compatibility exports for the resource-specific routers."""
+
+from ..routers import (
+    actualizar_estado_sos,
+    actualizar_mi_perfil,
+    actualizar_relevo,
+    activar_sos,
+    cerrar_sesion,
+    consultar_tendencia_carga,
+    crear_checkin,
+    crear_contacto,
+    crear_contacto_por_codigo,
+    crear_solicitud_relevo,
+    crear_usuario,
+    iniciar_sesion,
+    listar_alertas_sos,
+    listar_checkins,
+    listar_contactos,
+    listar_relevos_usuario,
+    listar_sos_recibidas,
+    obtener_balance_red,
+    obtener_resumen_semana,
+    router_auth,
+    router_checkins,
+    router_contactos,
+    router_perfil,
+    router_relevos,
+    router_sos,
+    router_usuarios,
+)
+from ..services.common import (
+    _commit_or_conflict,
+    _dias_de_alta_carga,
+    _duracion_horas,
+)

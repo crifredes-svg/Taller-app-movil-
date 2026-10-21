@@ -9,7 +9,7 @@ from alembic.config import Config
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from .routes import (
+from .routers import (
     router_auth,
     router_perfil,
     router_usuarios,

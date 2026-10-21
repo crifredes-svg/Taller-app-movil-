@@ -6,6 +6,26 @@
 * **Backend & DBA:** Diego Anabalon
 * **DevOps & Integración:** Cristian Fredes
 
+## Arquitectura del backend
+
+El backend organiza cada recurso con Modelo-Vista-Controlador (MVC):
+
+* `routers/<recurso>/router.py` registra sus endpoints y actúa como controlador
+  HTTP.
+* `models/<recurso>/model.py` contiene las operaciones del recurso: consulta o
+  modifica los datos mediante el repositorio. `entity.py` define el mapeo ORM.
+* `views/<recurso>/view.py` define los esquemas Pydantic para validar entradas
+  y serializar respuestas.
+
+El flujo es `router/controlador -> modelo -> repositorio -> sesión de base de
+datos`. La sesión se inyecta en cada petición y usa la conexión configurada en
+`database/`; la base MySQL/MariaDB es remota y la administra DevOps, no se crea
+una base local. `main.py` compone la aplicación ASGI. `services/` conserva
+reexportaciones para compatibilidad con imports existentes.
+`security/` implementa autenticación y hashing; `domain/` contiene reglas
+independientes de HTTP. Las migraciones se mantienen en `alembic/` y las pruebas
+en `tests/`.
+
 ## Ejecución del backend
 
 La API escucha en el puerto `8000` del contenedor y se publica en el `9000`.

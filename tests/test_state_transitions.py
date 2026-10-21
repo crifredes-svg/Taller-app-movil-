@@ -1,6 +1,6 @@
 import pytest
 
-from app.state_transitions import TRANSICIONES_RELEVO, TRANSICIONES_SOS
+from app.domain.state_transitions import TRANSICIONES_RELEVO, TRANSICIONES_SOS
 
 
 @pytest.mark.parametrize(

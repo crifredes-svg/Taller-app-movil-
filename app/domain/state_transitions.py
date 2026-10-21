@@ -1,4 +1,4 @@
-"""Transiciones permitidas para los estados de relevos y alertas SOS."""
+"""Domain transitions allowed for relief requests and SOS alerts."""
 
 TRANSICIONES_RELEVO = {
     "pendiente": {"aceptada"},

@@ -1,3 +1,5 @@
+"""Database engine, session factory, and request dependency."""
+
 import os
 
 from sqlalchemy import URL, create_engine, make_url

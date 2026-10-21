@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.routes import (
+from app.api.routes import (
     _commit_or_conflict,
     actualizar_estado_sos,
     actualizar_relevo,
@@ -574,7 +574,7 @@ def test_tendencia_carga_usa_dias_distintos_en_ventana_de_cinco_dias(api_client)
     from datetime import date, datetime, time, timedelta
     from types import SimpleNamespace
 
-    from app.routes import _dias_de_alta_carga
+    from app.api.routes import _dias_de_alta_carga
 
     hoy = date.today()
     checkins = [
