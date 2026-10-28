@@ -3,6 +3,7 @@
 from datetime import date, datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from ...repositories import SqlAlchemyRepository
 from ..common import _commit_or_conflict
 from ..common import _duracion_horas
@@ -16,18 +17,17 @@ def consultar_tendencia_carga(current_user: Usuario, db: Session):
     ahora = datetime.now(timezone.utc).replace(tzinfo=None)
     fecha_inicio = ahora.date() - timedelta(days=4)
     fecha_inicio_utc = datetime.combine(fecha_inicio, datetime.min.time())
-    checkins = (
+    dias_alta_carga = (
         repository.query(CheckIn)
+        .with_entities(func.count(func.distinct(func.date(CheckIn.fecha))))
         .filter(
             CheckIn.usuario_id == current_user.id,
             CheckIn.fecha >= fecha_inicio_utc,
             CheckIn.fecha <= ahora,
+            CheckIn.nivel.in_({"necesito_apoyo", "sobrepasada"}),
         )
-        .order_by(CheckIn.fecha.desc(), CheckIn.id.desc())
-        .limit(100)
-        .all()
+        .scalar()
     )
-    dias_alta_carga = _dias_de_alta_carga(checkins, ahora.date())
     return {
         "dias_evaluados": 5,
         "dias_alta_carga": dias_alta_carga,

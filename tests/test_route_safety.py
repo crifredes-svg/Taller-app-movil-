@@ -188,7 +188,7 @@ def test_integrity_error_rollback_y_respuesta_400():
     db.rollback.assert_called_once()
 
 
-def test_error_no_controlado_responde_json_generico_sin_filtrar_detalle():
+def test_error_no_controlado_responde_json_generico_sin_filtrar_detalle(caplog):
     request = Request(
         {"type": "http", "method": "GET", "path": "/", "headers": []}
     )
@@ -203,6 +203,8 @@ def test_error_no_controlado_responde_json_generico_sin_filtrar_detalle():
         "message": "Error interno del servidor",
         "detail": "Error interno del servidor",
     }
+    assert "secreto de conexion" not in caplog.text
+    assert "RuntimeError" in caplog.text
 
 
 @pytest.fixture
@@ -251,6 +253,110 @@ def _login_test_user(client, email="persona@example.com"):
             "password": "una-clave-segura-de-prueba",
         },
     )
+
+
+def test_validacion_no_devuelve_contrasena_ni_cuerpo(api_client):
+    response = api_client.post(
+        "/api/v1/usuarios",
+        json={"nombre": "Prueba", "correo": "prueba@correo.cl", "password": "corta"},
+    )
+    assert response.status_code == 422
+    assert "corta" not in response.text
+    assert all("input" not in error and "ctx" not in error for error in response.json()["detail"])
+
+
+@pytest.mark.parametrize("codigo", [123456, None, [], {}])
+def test_codigo_de_contacto_no_textual_devuelve_422(api_client, codigo):
+    user = _register_test_user(api_client).json()
+    token = _login_test_user(api_client).json()["access_token"]
+    response = api_client.post(
+        f"/api/v1/contactos/usuarios/{user['id']}/por-codigo",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"codigo_unico": codigo, "relacion": "Amigo"},
+    )
+    assert response.status_code == 422
+
+
+def test_disponibles_y_completar_sin_reasignar_cuidador(api_client):
+    from datetime import date
+
+    owner = _register_test_user(api_client, "owner@example.com").json()
+    helper = _register_test_user(api_client, "helper@example.com").json()
+    outsider = _register_test_user(api_client, "outsider@example.com").json()
+    owner_headers = {"Authorization": f"Bearer {_login_test_user(api_client, 'owner@example.com').json()['access_token']}"}
+    helper_headers = {"Authorization": f"Bearer {_login_test_user(api_client, 'helper@example.com').json()['access_token']}"}
+    outsider_headers = {"Authorization": f"Bearer {_login_test_user(api_client, 'outsider@example.com').json()['access_token']}"}
+    contact = api_client.post(
+        f"/api/v1/contactos/usuarios/{owner['id']}/por-codigo",
+        headers=owner_headers,
+        json={"codigo_unico": helper["codigo_unico"], "relacion": "Amigo"},
+    )
+    assert contact.status_code == 201
+    created = api_client.post(
+        "/api/v1/relevos",
+        headers=owner_headers,
+        json={
+            "titulo": "Apoyo en casa", "tipo": "casa",
+            "descripcion": "Necesito ayuda en mi casa",
+            "fecha": date.today().isoformat(),
+            "hora_inicio": "10:00", "hora_fin": "11:00",
+            "solicitante_id": owner["id"],
+        },
+    )
+    assert created.status_code == 201
+    relief_id = created.json()["id"]
+    assert api_client.get("/api/v1/relevos/disponibles").status_code == 401
+    available = api_client.get("/api/v1/relevos/disponibles", headers=helper_headers)
+    assert available.status_code == 200
+    assert [item["id"] for item in available.json()] == [relief_id]
+    assert api_client.get("/api/v1/relevos/disponibles", headers=outsider_headers).json() == []
+    assert api_client.get("/api/v1/relevos/disponibles", headers=owner_headers).json() == []
+    assert api_client.patch(
+        f"/api/v1/relevos/{relief_id}", headers=helper_headers,
+        json={"estado": "aceptada", "cuidador_id": helper["id"]},
+    ).status_code == 200
+    assert api_client.get("/api/v1/relevos/disponibles", headers=helper_headers).json() == []
+    invalid = api_client.patch(
+        f"/api/v1/relevos/{relief_id}", headers=helper_headers,
+        json={"estado": "completada", "cuidador_id": outsider["id"]},
+    )
+    assert invalid.status_code == 400
+    completed = api_client.patch(
+        f"/api/v1/relevos/{relief_id}", headers=helper_headers,
+        json={"estado": "completada"},
+    )
+    assert completed.status_code == 200
+    assert completed.json()["cuidador_id"] == helper["id"]
+
+
+def test_tendencia_no_pierde_dias_con_mas_de_cien_checkins(api_client):
+    from datetime import datetime, timedelta, timezone
+    from app.models import CheckIn
+
+    user = _register_test_user(api_client).json()
+    token = _login_test_user(api_client).json()["access_token"]
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.add_all(
+            CheckIn(usuario_id=user["id"], nivel="sobrepasada", fecha=now - timedelta(days=i))
+            for i in (0, 1, 2)
+        )
+        db.add_all(
+            CheckIn(usuario_id=user["id"], nivel="bien", fecha=now)
+            for _ in range(101)
+        )
+        db.commit()
+    finally:
+        gen.close()
+    response = api_client.get(
+        "/api/v1/checkins/tendencia", headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "dias_evaluados": 5, "dias_alta_carga": 3, "sugerir_pedir_apoyo": True,
+    }
 
 
 def test_flujo_registro_duplicado_login_y_acceso_protegido(api_client):

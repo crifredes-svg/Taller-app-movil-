@@ -94,6 +94,29 @@ def listar_relevos_usuario(usuario_id: int, limit: int, offset: int, current_use
         .all()
     )
 
+def listar_relevos_disponibles(limit: int, offset: int, current_user: Usuario, db: Session):
+    repository = SqlAlchemyRepository(db)
+    propietarios = repository.query(ContactoConfianza.usuario_id).filter(
+        ContactoConfianza.contacto_usuario_id == current_user.id
+    )
+    return (
+        repository.query(SolicitudRelevo)
+        .filter(
+            SolicitudRelevo.solicitante_id.in_(propietarios),
+            SolicitudRelevo.solicitante_id != current_user.id,
+            SolicitudRelevo.estado == "pendiente",
+            SolicitudRelevo.fecha >= date.today(),
+        )
+        .order_by(
+            SolicitudRelevo.fecha.asc(),
+            SolicitudRelevo.hora_inicio.asc(),
+            SolicitudRelevo.id.asc(),
+        )
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
 def actualizar_relevo(relevo_id: int, datos: SolicitudRelevoEstadoIn, current_user: Usuario, db: Session):
     repository = SqlAlchemyRepository(db)
     relevo = repository.get(
@@ -140,6 +163,11 @@ def actualizar_relevo(relevo_id: int, datos: SolicitudRelevoEstadoIn, current_us
         )
 
     if datos.cuidador_id is not None:
+        if datos.estado != "aceptada" and datos.cuidador_id != relevo.cuidador_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se puede cambiar el cuidador asignado al completar el relevo",
+            )
         cuidador = repository.get(Usuario, datos.cuidador_id)
 
         if cuidador is None:

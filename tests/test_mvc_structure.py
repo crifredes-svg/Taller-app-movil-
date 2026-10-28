@@ -46,7 +46,7 @@ def test_each_http_router_has_its_own_resource_module():
         router_sos,
     )
 
-    assert [len(router.routes) for router in routers] == [1, 2, 1, 3, 4, 4, 4]
+    assert [len(router.routes) for router in routers] == [1, 2, 1, 3, 4, 5, 4]
 
 
 def test_checkin_router_delegates_data_operations_to_its_model():

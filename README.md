@@ -82,9 +82,15 @@ La vista de Mi Red obtiene horas y porcentaje de relevos completados durante el
 mes con `GET /api/v1/contactos/usuarios/{id}/balance`. El calendario obtiene las
 horas de solicitudes aceptadas o completadas de la semana con
 `GET /api/v1/relevos/resumen/semana`.
+Los integrantes de una red consultan solicitudes pendientes mediante
+`GET /api/v1/relevos/disponibles` (Bearer, paginación `limit`/`offset`).
+Solo devuelve solicitudes no pasadas de personas que los agregaron a su red.
+Aceptar un relevo lo asigna al integrante autenticado; completarlo no permite
+cambiar al cuidador asignado.
 El inicio consulta `GET /api/v1/checkins/tendencia`, que sugiere pedir apoyo si
 hay carga alta en al menos tres días distintos de los últimos cinco; es una
-regla preventiva simple, no un diagnóstico.
+regla preventiva simple, no un diagnóstico. Cuenta días distintos en toda la
+ventana, sin truncarla a los últimos cien registros.
 
 Se incluye `postman/RedCuidadora.postman_collection.json` con pruebas de
 registro/login, perfil, check-in, red, relevo y SOS. Importa la colección y
@@ -102,8 +108,10 @@ El lifespan aplica primero `alembic upgrade head` y después
 `Base.metadata.create_all`. Esto automatiza el esquema para el arranque, pero
 en producción se debe probar la migración con backup y considerar que varios
 workers arrancando a la vez pueden competir por migrar. Los errores no
-controlados responden JSON genérico 500; el detalle real se reserva a logs
-internos para no filtrar SQL, credenciales ni rutas del servidor.
+controlados responden JSON genérico 500; el log registra únicamente el tipo de
+excepción, sin su mensaje ni parámetros SQL. Las respuestas de validación 422
+conservan `detail` con ubicación, tipo y mensaje, pero omiten los valores de
+entrada y el contexto para no devolver contraseñas u otros datos sensibles.
 
 La documentación interactiva y el esquema OpenAPI están deshabilitados en el
 servidor para no publicar un explorador de rutas. La comprobación de salud queda

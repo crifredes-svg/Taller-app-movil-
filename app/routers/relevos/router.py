@@ -9,6 +9,7 @@ from ...security import get_current_user
 from ...models.relevos.model import actualizar_relevo as ejecutar_actualizar_relevo
 from ...models.relevos.model import crear_solicitud_relevo as ejecutar_crear_solicitud_relevo
 from ...models.relevos.model import listar_relevos_usuario as ejecutar_listar_relevos_usuario
+from ...models.relevos.model import listar_relevos_disponibles as ejecutar_listar_relevos_disponibles
 from ...models.relevos.model import obtener_resumen_semana as ejecutar_obtener_resumen_semana
 from ...views.relevos.view import (
     ResumenSemanaOut,
@@ -21,6 +22,15 @@ router_relevos = APIRouter(
     prefix="/api/v1/relevos",
     tags=["Solicitudes y calendario"],
 )
+
+@router_relevos.get("/disponibles", response_model=list[SolicitudRelevoOut])
+def listar_relevos_disponibles(
+    limit: int = Query(default=100, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return ejecutar_listar_relevos_disponibles(limit, offset, current_user, db)
 
 @router_relevos.get("/resumen/semana", response_model=ResumenSemanaOut)
 def obtener_resumen_semana(

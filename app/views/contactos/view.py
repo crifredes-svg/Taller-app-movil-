@@ -35,6 +35,8 @@ class ContactoPorCodigoIn(BaseModel):
     @field_validator("codigo_unico", mode="before")
     @classmethod
     def normalizar_codigo(cls, codigo: str) -> str:
+        if not isinstance(codigo, str):
+            raise ValueError("El código debe ser texto")
         codigo_normalizado = codigo.strip().upper()
         if codigo_normalizado.startswith("RC-"):
             codigo_normalizado = codigo_normalizado[3:]

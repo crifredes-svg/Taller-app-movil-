@@ -547,6 +547,71 @@
         }
       }
     },
+    "/api/v1/relevos/disponibles": {
+      "get": {
+        "tags": [
+          "Solicitudes y calendario"
+        ],
+        "summary": "Listar Relevos Disponibles",
+        "operationId": "listar_relevos_disponibles_api_v1_relevos_disponibles_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudRelevoOut"
+                  },
+                  "title": "Response Listar Relevos Disponibles Api V1 Relevos Disponibles Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/relevos/resumen/semana": {
       "get": {
         "tags": [
