@@ -40,6 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.tooling.preview.Preview
 import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
 import com.redcuidadora.app.ui.navigation.Screen
@@ -59,6 +63,14 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun RedScreen() {
     var selectedCategory by remember { mutableStateOf("Todos") }
+    val context = LocalContext.current
+    val userId = TokenManager.getUserId(context)
+    val network = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarContactos(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val balance = rememberRemoteData(userId) {
+        RetrofitClient.getApiService(context).obtenerBalance(userId ?: error("Inicia sesión nuevamente.")).requireBody()
+    }
 
     Column(
         modifier = Modifier
@@ -96,63 +108,24 @@ fun RedScreen() {
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Person 1: Ana
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Ana González (Tía)", color = TextPrimaryDark, fontSize = 13.sp)
-                    Text(text = "50% (6 hrs)", color = PrimaryEmerald, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                balance.data?.contactos?.forEachIndexed { index, contact ->
+                    val color = listOf(PrimaryEmerald, Color(0xFF3B82F6), StatusAmber)[index % 3]
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "${contact.nombre} (${contact.relacion})", color = TextPrimaryDark, fontSize = 13.sp)
+                        Text(text = "${contact.porcentaje}% (${contact.horasApoyo} hrs)", color = color, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = { (contact.porcentaje / 100).toFloat().coerceIn(0f, 1f) },
+                        modifier = Modifier.fillMaxWidth().height(8.dp),
+                        color = color,
+                        trackColor = DarkSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(
-                    progress = { 0.5f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp),
-                    color = PrimaryEmerald,
-                    trackColor = DarkSurfaceVariant,
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Person 2: Matías
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Matías Paredes (Compañero)", color = TextPrimaryDark, fontSize = 13.sp)
-                    Text(text = "25% (3 hrs)", color = Color(0xFF3B82F6), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(
-                    progress = { 0.25f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp),
-                    color = Color(0xFF3B82F6),
-                    trackColor = DarkSurfaceVariant,
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Person 3: Carla
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Carla Morales (Vecina)", color = TextPrimaryDark, fontSize = 13.sp)
-                    Text(text = "25% (3 hrs)", color = StatusAmber, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(
-                    progress = { 0.25f },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp),
-                    color = StatusAmber,
-                    trackColor = DarkSurfaceVariant,
-                )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -165,7 +138,10 @@ fun RedScreen() {
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Distribución saludable. Nadie está sobrecargado.",
+                        text = balance.data?.let {
+                            if (it.totalHoras == 0.0) "Sin horas de apoyo registradas."
+                            else "${it.totalHoras} horas de apoyo del ${it.desde} al ${it.hasta}."
+                        } ?: balance.message,
                         color = StatusGreen,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
@@ -202,11 +178,29 @@ fun RedScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Contact Cards List
-        val contacts = listOf(
-            ContactItem("Ana González", "Tía", listOf("Relevo en casa", "Compras"), "Martes y Jueves 17:00 - 20:00", "A", PrimaryEmerald),
-            ContactItem("Matías Paredes", "Compañero de carrera", listOf("Apoyo académico y apuntes"), "Lunes a Viernes 15:00 - 18:00", "M", Color(0xFF3B82F6)),
-            ContactItem("Carla Morales", "Vecina", listOf("Relevo en casa", "Compras"), "Sábados 10:00 - 14:00", "C", StatusAmber)
-        )
+        val contacts = network.data.orEmpty().filter {
+            val role = java.text.Normalizer.normalize(it.relacion.lowercase(), java.text.Normalizer.Form.NFD)
+                .replace(Regex("\\p{M}"), "")
+            when (selectedCategory) {
+                "Familia" -> listOf("tia", "tio", "madre", "padre", "hermana", "hermano", "abuela", "abuelo", "prima", "primo", "pareja", "hija", "hijo", "familia").any(role::contains)
+                "Compañeros" -> role.contains("companer")
+                "Vecinos" -> role.contains("vecin")
+                else -> true
+            }
+        }.mapIndexed { index, contact ->
+            ContactItem(
+                contact.nombre, contact.relacion, contact.apoyos?.split(",")?.filter(String::isNotBlank).orEmpty(),
+                contact.disponibilidad ?: "Sin disponibilidad informada", contact.nombre.take(1).uppercase(),
+                listOf(PrimaryEmerald, Color(0xFF3B82F6), StatusAmber)[index % 3],
+            )
+        }
+        if (contacts.isEmpty()) {
+            Text(
+                text = if (network.data == null) network.message else "No hay contactos en esta categoría.",
+                color = TextSecondaryDark,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
 
         contacts.forEach { contact ->
             Card(
@@ -253,14 +247,14 @@ fun RedScreen() {
                         }
 
                         Row {
-                            IconButton(onClick = { /* Call */ }) {
+                            IconButton(onClick = { Toast.makeText(context, "Este contacto no tiene teléfono disponible en el servicio.", Toast.LENGTH_LONG).show() }) {
                                 Icon(
                                     imageVector = Icons.Default.Phone,
                                     contentDescription = "Llamar",
                                     tint = TextSecondaryDark
                                 )
                             }
-                            IconButton(onClick = { /* WhatsApp */ }) {
+                            IconButton(onClick = { Toast.makeText(context, "Este contacto no tiene un número de mensajería disponible en el servicio.", Toast.LENGTH_LONG).show() }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Send,
                                     contentDescription = "Mensaje",

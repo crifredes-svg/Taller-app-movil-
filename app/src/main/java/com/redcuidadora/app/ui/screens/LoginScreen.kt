@@ -243,7 +243,9 @@ fun LoginScreen(
                             val response = api.iniciarSesion(LoginInDto(loginCorreo.trim(), loginPassword))
 
                             val body = response.body()
-                            if ((response.isSuccessful) && (body != null)) {
+                            if (response.code() == 200 && body != null &&
+                                body.accessToken.isNotBlank() && body.usuario.id != null && body.expiresIn > 0
+                            ) {
                                 TokenManager.saveSession(
                                     context = context,
                                     token = body.accessToken,
@@ -255,8 +257,10 @@ fun LoginScreen(
                             } else {
                                 errorMessage = ApiErrorParser.parseError(response)
                             }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
                         } catch (_: Exception) {
-                            errorMessage = "Error de conexión con el servidor (puerto 9000)"
+                            errorMessage = "No se pudo conectar con el servidor. Inténtalo nuevamente."
                         } finally {
                             isSubmitting = false
                         }
@@ -450,6 +454,12 @@ fun LoginScreen(
                         errorMessage = "Ingresa nombre, correo y contraseña de al menos 12 caracteres"
                         return@Button
                     }
+                    if (regPersonaEdadText.isNotBlank() &&
+                        (regPersonaEdadText.toIntOrNull() == null || regPersonaEdadText.toInt() !in 0..130)
+                    ) {
+                        errorMessage = "Ingresa una edad válida entre 0 y 130."
+                        return@Button
+                    }
                     isSubmitting = true
                     errorMessage = null
                     successMessage = null
@@ -474,16 +484,23 @@ fun LoginScreen(
                             val response = api.crearUsuario(usuarioIn)
 
                             val userCreated = response.body()
-                            if ((response.isSuccessful) && (userCreated != null)) {
-                                val codigo = userCreated.codigoUnico ?: "RC-REGISTRO"
-                                successMessage = "¡Cuenta creada! Tu código único es: $codigo. Ahora inicia sesión."
+                            if (response.code() == 201 && userCreated != null) {
+                                val codigo = userCreated.codigoUnico
+                                successMessage = if (codigo.isNullOrBlank()) {
+                                    "¡Cuenta creada! Ahora inicia sesión."
+                                } else {
+                                    "¡Cuenta creada! Tu código único es: $codigo. Ahora inicia sesión."
+                                }
+                                regPassword = ""
                                 loginCorreo = regCorreo
                                 selectedTabIndex = 0
                             } else {
                                 errorMessage = ApiErrorParser.parseError(response)
                             }
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            throw e
                         } catch (_: Exception) {
-                            errorMessage = "Error de conexión con el servidor (puerto 9000)"
+                            errorMessage = "No se pudo conectar con el servidor. Inténtalo nuevamente."
                         } finally {
                             isSubmitting = false
                         }

@@ -4,8 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.redcuidadora.app.data.network.UsuarioDto
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 object TokenManager {
+    private val sessionRevision = MutableStateFlow(0)
+    val changes = sessionRevision.asStateFlow()
     private const val PREF_NAME = "redcuidadora_session_prefs"
     private const val KEY_ACCESS_TOKEN = "access_token"
     private const val KEY_EXPIRES_AT = "expires_at_timestamp"
@@ -51,11 +55,17 @@ object TokenManager {
         return getUser(context)?.id
     }
 
+    fun updateUser(context: Context, user: UsuarioDto) {
+        getPrefs(context).edit().putString(KEY_USER_DATA, Gson().toJson(user.copy(password = null))).apply()
+    }
+
     fun isLoggedIn(context: Context): Boolean {
         return getToken(context) != null
     }
 
     fun clearSession(context: Context) {
+        val hadSession = getPrefs(context).contains(KEY_ACCESS_TOKEN)
         getPrefs(context).edit().clear().apply()
+        if (hadSession) sessionRevision.value += 1
     }
 }

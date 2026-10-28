@@ -42,9 +42,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.tooling.preview.Preview
 import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
 import com.redcuidadora.app.ui.navigation.Screen
+import com.redcuidadora.app.ui.components.StatusNotificationBanner3
 import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -63,10 +67,49 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun HomeScreen(
     onNavigateToSolicitudes: () -> Unit,
-    onNavigateToCheckIn: () -> Unit,
+    onNavigateToCheckIn: (String) -> Unit,
     onNavigateToPerfil: () -> Unit = {},
 ) {
-    var selectedMood by remember { mutableStateOf("Cansada") }
+    val context = LocalContext.current
+    val action = rememberApiAction()
+    val userId = TokenManager.getUserId(context)
+    val user = rememberRemoteData(userId) {
+        TokenManager.getUser(context) ?: error("Inicia sesión nuevamente.")
+    }
+    val contacts = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarContactos(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val checkIns = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarCheckIns(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val trend = rememberRemoteData(userId) { RetrofitClient.getApiService(context).obtenerTendencia().requireBody() }
+    val alerts = rememberRemoteData(userId) { allPages { RetrofitClient.getApiService(context).listarSOSRecibidas(it) } }
+    val relief = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarRelevosUsuario(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val latest = checkIns.data?.maxByOrNull { it.fecha.orEmpty() }
+    val selectedMood = when (latest?.nivel) {
+        "bien" -> "Bien"
+        "algo_cansada" -> "Cansada"
+        "necesito_apoyo" -> "Apoyo"
+        "sobrepasada" -> "Sobrepasada"
+        else -> ""
+    }
+    val next = relief.data?.filter { it.estado == "aceptada" && it.fecha >= todayIso() }
+        ?.sortedWith(compareBy<SolicitudRelevoDto> { it.fecha }.thenBy { it.horaInicio })?.firstOrNull()
+    val activeAlert = alerts.data?.firstOrNull { it.estado == "activa" }
+    val alertText = when {
+        activeAlert != null -> {
+            val name = contacts.data?.find { it.contactoUsuarioId == activeAlert.usuarioId }?.nombre
+                ?: "Usuario #${activeAlert.usuarioId}"
+            "SOS de $name: ${activeAlert.mensaje}"
+        }
+        alerts.data == null -> alerts.message
+        trend.data == null -> trend.message
+        trend.data?.sugerirPedirApoyo == true ->
+            "Alerta preventiva de sobrecarga: ${trend.data?.diasAltaCarga} días con alta carga. Considera pedir apoyo a tu red."
+        else -> "Sin alertas de sobrecarga ni SOS recibidas."
+    }
     var showSosDialog by remember { mutableStateOf(value = false) }
 
     if (showSosDialog) {
@@ -76,20 +119,32 @@ fun HomeScreen(
                 Text(
                     text = "🚨 Activar SOS de Confianza",
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimaryDark
+                    color = TextPrimaryDark,
                 )
             },
             text = {
-                Text(
-                    text = "Se enviará una alerta de urgencia inmediata a tu Red de Confianza (Ana González, Matías Paredes, Carla Morales) indicando que necesitas un relevo urgente.",
-                    color = TextSecondaryDark,
-                    fontSize = 14.sp
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "La alerta quedará disponible para tu Red de Confianza${contacts.data?.takeIf { it.isNotEmpty() }?.joinToString(prefix = " (", postfix = ")") { it.nombre }.orEmpty()} cuando consulten la app, indicando que necesitas un relevo urgente. No se envían notificaciones push.",
+                        color = TextSecondaryDark,
+                        fontSize = 14.sp,
+                    )
+                    action.message?.takeIf { !action.success }?.let { message ->
+                        StatusNotificationBanner3(message = message, isSuccess = false)
+                    }
+                }
             },
             confirmButton = {
                 Button(
-                    onClick = { showSosDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = StatusRed)
+                    onClick = {
+                        action.run("Alerta SOS registrada correctamente. Tu red puede verla al consultar la app.", onSuccess = { showSosDialog = false }) {
+                            RetrofitClient.getApiService(context).activarSOS(
+                                AlertaSOSDto(usuarioId = userId ?: error("Inicia sesión nuevamente.")),
+                            ).requireBody(201)
+                        }
+                    },
+                    enabled = !action.busy,
+                    colors = ButtonDefaults.buttonColors(containerColor = StatusRed),
                 ) {
                     Text("Enviar Alerta Urgente", color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -113,6 +168,13 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
     ) {
         Spacer(modifier = Modifier.height(16.dp))
+
+        if (!showSosDialog) {
+            action.message?.let { message ->
+                StatusNotificationBanner3(message = message, isSuccess = action.success)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
 
         // Top Header
         Row(
@@ -159,7 +221,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Hola, María 👋",
+                        text = user.data?.let { "Hola, ${it.nombre} 👋" } ?: user.message,
                         style = MaterialTheme.typography.headlineMedium,
                         color = TextPrimaryDark
                     )
@@ -181,7 +243,12 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Estudiante y cuidadora • Cuidando a Don Carlos (82 años)",
+                    text = user.data?.let {
+                        listOfNotNull(
+                            it.ocupacion?.takeIf(String::isNotBlank),
+                            it.personaCuidadaNombre?.let { name -> "Cuidando a $name${it.personaCuidadaEdad?.let { age -> " ($age años)" }.orEmpty()}" },
+                        ).joinToString(" • ").ifBlank { "Completa tus datos en Mi Perfil" }
+                    } ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondaryDark
                 )
@@ -207,7 +274,7 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Alerta preventiva de sobrecarga: Llevas días con alta exigencia académica y cuidado. Pide un relevo a tu red antes de que afecte tus certámenes.",
+                        text = alertText,
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextPrimaryDark
                     )
@@ -257,8 +324,12 @@ fun HomeScreen(
                 FilterChip(
                     selected = isSelected,
                     onClick = {
-                        selectedMood = mood
-                        onNavigateToCheckIn()
+                        onNavigateToCheckIn(when (mood) {
+                            "Bien" -> "Estoy bien"
+                            "Cansada" -> "Algo cansada"
+                            "Apoyo" -> "Necesito apoyo"
+                            else -> "Sobrepasada"
+                        })
                     },
                     label = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -313,7 +384,11 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Mañana 09:30 - Relevo para clases presenciales cubierto por Ana González (Tía)",
+                    text = next?.let { item ->
+                        val caregiver = contacts.data?.find { it.contactoUsuarioId == item.cuidadorId }?.nombre
+                            ?: if (item.cuidadorId == userId) "Ti" else "usuario #${item.cuidadorId}"
+                        "${item.fecha} ${item.horaInicio} - ${item.titulo}, cubierto por $caregiver"
+                    } ?: if (relief.data == null) relief.message else "No tienes próximos relevos confirmados.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimaryDark,
                     fontWeight = FontWeight.Medium

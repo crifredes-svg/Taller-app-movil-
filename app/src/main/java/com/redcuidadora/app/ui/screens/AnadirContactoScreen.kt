@@ -38,6 +38,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.redcuidadora.app.ui.components.StatusNotificationBanner
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import com.redcuidadora.app.ui.theme.DarkSurface
 import com.redcuidadora.app.ui.theme.DarkSurfaceVariant
 import com.redcuidadora.app.ui.theme.PrimaryEmerald
@@ -48,12 +50,12 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun AnadirContactoScreen(
     onNavigateBack: () -> Unit,
-    showPreviewSuccessBanner: Boolean = true,
+    showPreviewSuccessBanner: Boolean = false,
 ) {
     val context = LocalContext.current
-    var codigoContacto by remember { mutableStateOf("RC-8F3A92") }
-    var relacionContigo by remember { mutableStateOf("Tía") }
-    var showSuccessBanner by remember { mutableStateOf(showPreviewSuccessBanner) }
+    var codigoContacto by remember { mutableStateOf("") }
+    var relacionContigo by remember { mutableStateOf("") }
+    val action = rememberApiAction()
 
     Column(
         modifier = Modifier
@@ -157,12 +159,16 @@ fun AnadirContactoScreen(
 
         Button(
             onClick = {
-                if (codigoContacto.isBlank() || relacionContigo.isBlank()) {
-                    Toast.makeText(context, "Por favor completa el código y la relación", Toast.LENGTH_SHORT).show()
-                } else {
-                    showSuccessBanner = true
+                action.run("Se añadió el contacto a tu red de confianza") {
+                    require(Regex("(?:RC-)?(?:[0-9A-F]{6}|[0-9A-F]{8})").matches(codigoContacto.trim().uppercase())) { "Ingresa un código válido de tu contacto." }
+                    require(relacionContigo.trim().length in 2..40) { "La relación debe tener entre 2 y 40 caracteres." }
+                    val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
+                    RetrofitClient.getApiService(context).crearContactoPorCodigo(
+                        id, ContactoPorCodigoDto(codigoContacto.trim(), relacionContigo.trim(), apoyos = null, disponibilidad = null),
+                    ).requireBody(201)
                 }
             },
+            enabled = !action.busy && !action.success,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -180,10 +186,10 @@ fun AnadirContactoScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Success Status Notification Banner
-        if (showSuccessBanner) {
+        if (action.message != null || showPreviewSuccessBanner) {
             StatusNotificationBanner(
-                message = "Se añadió el contacto a tu red de confianza",
-                isSuccess = true,
+                message = action.message ?: "Se añadió el contacto a tu red de confianza",
+                isSuccess = action.success || showPreviewSuccessBanner,
             )
         }
 

@@ -38,6 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,7 +60,23 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 fun CalendarioScreen(
     onNavigateToSolicitudes: () -> Unit,
 ) {
-    var selectedDayIndex by remember { mutableIntStateOf(2) } // Miércoles (X)
+    val context = LocalContext.current
+    val userId = TokenManager.getUserId(context)
+    val weekDates = remember { currentWeekDates() }
+    var selectedDayIndex by remember { mutableIntStateOf(weekDates.indexOf(todayIso()).coerceAtLeast(0)) }
+    val summary = rememberRemoteData(userId) { RetrofitClient.getApiService(context).obtenerResumenSemana().requireBody() }
+    val requests = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarRelevosUsuario(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val contacts = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarContactos(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val shifts = requests.data.orEmpty().filter { it.fecha == weekDates[selectedDayIndex] }.sortedBy { it.horaInicio }
+    fun caregiverName(id: Int?): String = when (id) {
+        userId -> "${TokenManager.getUser(context)?.nombre.orEmpty()} (Tú)"
+        null -> "Buscando apoyo..."
+        else -> contacts.data?.find { it.contactoUsuarioId == id }?.let { "${it.nombre} (${it.relacion})" } ?: "Usuario #$id"
+    }
 
     val days = listOf(
         "Lun" to "L",
@@ -119,7 +138,7 @@ fun CalendarioScreen(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "7.0 horas de estudio y clases protegidas esta semana",
+                    text = summary.data?.let { "${it.horasProtegidas} horas de estudio y clases protegidas esta semana" } ?: summary.message,
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimaryDark,
                     fontWeight = FontWeight.Bold,
@@ -184,7 +203,7 @@ fun CalendarioScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Turnos del Miércoles",
+                text = "Turnos del ${weekDates[selectedDayIndex]}",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimaryDark,
                 fontWeight = FontWeight.Bold,
@@ -212,9 +231,17 @@ fun CalendarioScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Turno 1: Confirmado
+        if (shifts.isEmpty()) {
+            Text(
+                text = if (requests.data == null) requests.message else "No hay turnos para este día.",
+                color = TextSecondaryDark,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+
+        shifts.filter { it.estado != "pendiente" }.forEach { shift ->
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().clickable { onNavigateToSolicitudes() },
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, PrimaryEmerald),
@@ -234,7 +261,7 @@ fun CalendarioScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "09:30 – 13:00",
+                            text = "${shift.horaInicio} – ${shift.horaFin}",
                             color = TextPrimaryDark,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
@@ -246,7 +273,7 @@ fun CalendarioScreen(
                         shape = RoundedCornerShape(8.dp),
                     ) {
                         Text(
-                            text = "Confirmado",
+                            text = if (shift.estado == "completada") "Completado" else "Confirmado",
                             color = StatusGreen,
                             fontWeight = FontWeight.Bold,
                             fontSize = 11.sp,
@@ -258,7 +285,7 @@ fun CalendarioScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Clases presenciales y taller",
+                    text = shift.titulo,
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimaryDark,
                     fontWeight = FontWeight.Bold,
@@ -278,13 +305,13 @@ fun CalendarioScreen(
                                 .background(PrimaryEmerald, CircleShape),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(text = "A", color = TextPrimaryDark, fontWeight = FontWeight.Bold)
+                            Text(text = caregiverName(shift.cuidadorId).take(1), color = TextPrimaryDark, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(text = "Cuidador asignado", fontSize = 11.sp, color = TextSecondaryDark)
                             Text(
-                                text = "Ana González (Tía)",
+                                text = caregiverName(shift.cuidadorId),
                                 fontSize = 13.sp,
                                 color = TextPrimaryDark,
                                 fontWeight = FontWeight.SemiBold,
@@ -302,10 +329,11 @@ fun CalendarioScreen(
         }
 
         Spacer(modifier = Modifier.height(12.dp))
+        }
 
-        // Turno 2: Buscando apoyo
+        shifts.filter { it.estado == "pendiente" }.forEach { shift ->
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().clickable { onNavigateToSolicitudes() },
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, StatusAmber),
@@ -325,7 +353,7 @@ fun CalendarioScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "17:00 – 19:00",
+                            text = "${shift.horaInicio} – ${shift.horaFin}",
                             color = TextPrimaryDark,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
@@ -349,7 +377,7 @@ fun CalendarioScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Estudio para certamen",
+                    text = shift.titulo,
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimaryDark,
                     fontWeight = FontWeight.Bold,
@@ -398,6 +426,7 @@ fun CalendarioScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+        }
     }
 }
 

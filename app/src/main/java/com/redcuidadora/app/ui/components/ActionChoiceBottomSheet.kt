@@ -47,25 +47,25 @@ fun ActionChoiceBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
         containerColor = DarkSurface,
-        contentColor = TextPrimaryDark
+        contentColor = TextPrimaryDark,
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp, top = 8.dp)
+                .padding(bottom = 32.dp, top = 8.dp),
         ) {
             Text(
                 text = "¿Qué deseas realizar?",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimaryDark
+                color = TextPrimaryDark,
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // Option 1: Añadir Contacto
                 Card(
@@ -77,27 +77,27 @@ fun ActionChoiceBottomSheet(
                             onSelectAddContact()
                         },
                     colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
                 ) {
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PersonAdd,
                             contentDescription = "Añadir Contacto",
                             tint = PrimaryEmerald,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Añadir Contacto",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryDark
+                            color = TextPrimaryDark,
                         )
                     }
                 }
@@ -112,27 +112,27 @@ fun ActionChoiceBottomSheet(
                             onSelectCreateRequest()
                         },
                     colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
                 ) {
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PostAdd,
                             contentDescription = "Hacer Solicitud",
                             tint = PrimaryEmerald,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Hacer Solicitud",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryDark
+                            color = TextPrimaryDark,
                         )
                     }
                 }
@@ -149,46 +149,46 @@ fun ActionChoiceBottomSheetPreview() {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(DarkSurface)
-                .padding(24.dp)
+                .padding(24.dp),
         ) {
             Text(
                 text = "¿Qué deseas realizar?",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimaryDark
+                color = TextPrimaryDark,
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 Card(
                     modifier = Modifier
                         .weight(1f)
                         .height(130.dp),
                     colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
                 ) {
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PersonAdd,
                             contentDescription = "Añadir Contacto",
                             tint = PrimaryEmerald,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Añadir Contacto",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryDark
+                            color = TextPrimaryDark,
                         )
                     }
                 }
@@ -198,27 +198,27 @@ fun ActionChoiceBottomSheetPreview() {
                         .weight(1f)
                         .height(130.dp),
                     colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
                 ) {
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
                             .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.PostAdd,
                             contentDescription = "Hacer Solicitud",
                             tint = PrimaryEmerald,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(36.dp),
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Hacer Solicitud",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryDark
+                            color = TextPrimaryDark,
                         )
                     }
                 }

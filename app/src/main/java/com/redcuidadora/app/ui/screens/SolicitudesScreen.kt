@@ -2,6 +2,8 @@ package com.redcuidadora.app.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +25,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -41,6 +47,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -62,6 +71,77 @@ fun SolicitudesScreen(
     onOpenActionChoice: () -> Unit = {},
 ) {
     var selectedFilter by remember { mutableStateOf("Todas") }
+    val context = LocalContext.current
+    val userId = TokenManager.getUserId(context)
+    val action = rememberApiAction()
+    var revision by remember { mutableStateOf(0) }
+    var selectedRequest by remember { mutableStateOf<SolicitudRelevoDto?>(null) }
+    val own = rememberRemoteData(revision) {
+        allPages { RetrofitClient.getApiService(context).listarRelevosUsuario(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val available = rememberRemoteData(revision) {
+        allPages { RetrofitClient.getApiService(context).listarRelevosDisponibles(it) }
+    }
+    val contacts = rememberRemoteData(userId) {
+        allPages { RetrofitClient.getApiService(context).listarContactos(userId ?: error("Inicia sesión nuevamente."), it) }
+    }
+    val requests = (own.data.orEmpty() + available.data.orEmpty()).distinctBy { it.id }
+        .sortedWith(compareBy<SolicitudRelevoDto> { it.fecha }.thenBy { it.horaInicio })
+    val visible = requests.filter {
+        when (selectedFilter) {
+            "Pendientes" -> it.estado == "pendiente"
+            "Confirmadas" -> it.estado == "aceptada"
+            "Completadas" -> it.estado == "completada"
+            else -> true
+        }
+    }
+    fun actorName(id: Int?): String = when (id) {
+        userId -> "${TokenManager.getUser(context)?.nombre.orEmpty()} (Tú)"
+        null -> "Sin cuidador asignado"
+        else -> contacts.data?.find { it.contactoUsuarioId == id }?.let { "${it.nombre} (${it.relacion})" } ?: "Usuario #$id"
+    }
+    fun share(item: SolicitudRelevoDto) {
+        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, item.shareText())
+        }, "Compartir solicitud"))
+    }
+    selectedRequest?.let { item ->
+        val canAccept = item.estado == "pendiente" && item.solicitanteId != userId
+        val canComplete = item.estado == "aceptada" && item.cuidadorId == userId
+        AlertDialog(
+            onDismissRequest = { if (!action.busy) selectedRequest = null },
+            title = { Text(item.titulo, fontWeight = FontWeight.Bold, color = TextPrimaryDark) },
+            text = { Text(item.shareText(), color = TextSecondaryDark) },
+            confirmButton = {
+                if (canAccept || canComplete) {
+                    Button(
+                        enabled = !action.busy,
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+                        onClick = {
+                            action.run(
+                                if (canAccept) "Relevo aceptado" else "Relevo completado",
+                                onSuccess = { selectedRequest = null; revision += 1 },
+                            ) {
+                                RetrofitClient.getApiService(context).actualizarRelevo(
+                                    item.id ?: error("Solicitud sin identificador."),
+                                    ActualizarEstadoRelevoDto(
+                                        estado = if (canAccept) "aceptada" else "completada",
+                                        cuidadorId = if (canAccept) userId ?: error("Inicia sesión nuevamente.") else null,
+                                    ),
+                                ).requireBody(200)
+                            }
+                        },
+                    ) { Text(if (canAccept) "Aceptar relevo" else "Completar relevo") }
+                } else {
+                    TextButton(onClick = { share(item) }) { Text("Difundir", color = PrimaryEmerald) }
+                }
+            },
+            dismissButton = { TextButton(onClick = { selectedRequest = null }) { Text("Cerrar", color = TextSecondaryDark) } },
+            containerColor = DarkSurface,
+            shape = RoundedCornerShape(16.dp),
+        )
+    }
 
     Scaffold(
         bottomBar = bottomBar,
@@ -112,12 +192,16 @@ fun SolicitudesScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                val filters = listOf("Todas (3)", "Pendientes (1)", "Confirmadas (1)", "Completadas (1)")
-                filters.forEach { filterText ->
-                    val isSelected = (selectedFilter == filterText) || ((selectedFilter == "Todas") && filterText.startsWith("Todas"))
+                val filters = listOf(
+                    "Todas" to requests.size, "Pendientes" to requests.count { it.estado == "pendiente" },
+                    "Confirmadas" to requests.count { it.estado == "aceptada" }, "Completadas" to requests.count { it.estado == "completada" },
+                )
+                filters.forEach { (filter, count) ->
+                    val filterText = "$filter ($count)"
+                    val isSelected = selectedFilter == filter
                     FilterChip(
                         selected = isSelected,
-                        onClick = { selectedFilter = filterText },
+                        onClick = { selectedFilter = filter },
                         label = { Text(text = filterText, fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
                             containerColor = DarkSurfaceVariant,
@@ -137,7 +221,13 @@ fun SolicitudesScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Solicitud 1: Pendiente (Respiro)
+            if (own.data == null || available.data == null) {
+                Text(text = listOf(own, available).filter { it.data == null }.joinToString("\n") { it.message }, color = TextSecondaryDark, style = MaterialTheme.typography.bodyMedium)
+            } else if (visible.isEmpty()) {
+                Text(text = "No hay solicitudes en esta categoría.", color = TextSecondaryDark, style = MaterialTheme.typography.bodyMedium)
+            }
+
+            visible.filter { it.estado == "pendiente" }.forEach { request ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = DarkSurface),
@@ -163,10 +253,10 @@ fun SolicitudesScreen(
                             )
                         }
 
-                        IconButton(onClick = {}) {
+                        IconButton(onClick = { share(request) }) {
                             Icon(
                                 imageVector = Icons.Default.Share,
-                                contentDescription = "Compartir a WhatsApp",
+                                contentDescription = "Compartir",
                                 tint = PrimaryEmerald,
                                 modifier = Modifier.size(20.dp),
                             )
@@ -176,7 +266,7 @@ fun SolicitudesScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Relevo para estudio de certamen",
+                        text = request.titulo,
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimaryDark,
                         fontWeight = FontWeight.Bold,
@@ -185,7 +275,7 @@ fun SolicitudesScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Solicitado por: María González (Tú)",
+                        text = "Solicitado por: ${actorName(request.solicitanteId)}",
                         fontSize = 12.sp,
                         color = TextSecondaryDark,
                     )
@@ -201,13 +291,13 @@ fun SolicitudesScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Miércoles 17:00 – 19:00 ",
+                            text = "${request.fecha} ${request.horaInicio} – ${request.horaFin} ",
                             color = TextPrimaryDark,
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp,
                         )
                         Text(
-                            text = "(2.0 hrs)",
+                            text = "(${request.hours()} hrs)",
                             color = PrimaryEmerald,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
@@ -217,21 +307,22 @@ fun SolicitudesScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedButton(
-                        onClick = {},
+                        onClick = { selectedRequest = request },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, PrimaryEmerald),
                     ) {
-                        Text(text = "Ver detalles / Difundir", color = PrimaryEmerald, fontWeight = FontWeight.Bold)
+                        Text(text = if (request.solicitanteId == userId) "Ver detalles / Difundir" else "Ver detalles / Aceptar", color = PrimaryEmerald, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+            }
 
-            // Solicitud 2: Aceptado / Confirmado
+            visible.filter { it.estado != "pendiente" }.forEach { request ->
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().clickable { selectedRequest = request },
                 colors = CardDefaults.cardColors(containerColor = DarkSurface),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, PrimaryEmerald),
@@ -247,7 +338,7 @@ fun SolicitudesScreen(
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             Text(
-                                text = "CONFIRMADA",
+                                text = if (request.estado == "completada") "COMPLETADA" else "CONFIRMADA",
                                 color = StatusGreen,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp,
@@ -255,7 +346,7 @@ fun SolicitudesScreen(
                             )
                         }
 
-                        IconButton(onClick = {}) {
+                        IconButton(onClick = { share(request) }) {
                             Icon(
                                 imageVector = Icons.Default.Share,
                                 contentDescription = "Compartir",
@@ -268,7 +359,7 @@ fun SolicitudesScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Asistir a taller universitario presencial",
+                        text = request.titulo,
                         style = MaterialTheme.typography.titleMedium,
                         color = TextPrimaryDark,
                         fontWeight = FontWeight.Bold,
@@ -277,7 +368,7 @@ fun SolicitudesScreen(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Solicitado por: María González (Tú)",
+                        text = "Solicitado por: ${actorName(request.solicitanteId)}",
                         fontSize = 12.sp,
                         color = TextSecondaryDark,
                     )
@@ -293,13 +384,13 @@ fun SolicitudesScreen(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Mañana 09:30 – 13:00 ",
+                            text = "${request.fecha} ${request.horaInicio} – ${request.horaFin} ",
                             color = TextPrimaryDark,
                             fontWeight = FontWeight.Medium,
                             fontSize = 13.sp,
                         )
                         Text(
-                            text = "(3.5 hrs)",
+                            text = "(${request.hours()} hrs)",
                             color = PrimaryEmerald,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
@@ -324,7 +415,7 @@ fun SolicitudesScreen(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "A",
+                                    text = actorName(request.cuidadorId).take(1),
                                     color = TextPrimaryDark,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
@@ -332,7 +423,7 @@ fun SolicitudesScreen(
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Ana González (Tía) cubre el relevo",
+                                text = "${actorName(request.cuidadorId)} ${if (request.estado == "completada") "completó" else "cubre"} el relevo",
                                 color = PrimaryEmerald,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 13.sp,
@@ -343,6 +434,7 @@ fun SolicitudesScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

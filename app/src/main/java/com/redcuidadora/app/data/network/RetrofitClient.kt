@@ -14,7 +14,7 @@ object RetrofitClient {
     fun getApiService(context: Context): ApiService {
         return apiServiceInstance ?: synchronized(this) {
             val loggingInterceptor = HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY
+                level = HttpLoggingInterceptor.Level.NONE
             }
 
             val okHttpClient = OkHttpClient.Builder()

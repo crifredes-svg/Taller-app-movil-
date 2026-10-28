@@ -3,6 +3,7 @@ package com.redcuidadora.app.ui.screens
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -37,6 +40,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.redcuidadora.app.ui.components.StatusNotificationBanner
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import com.redcuidadora.app.ui.theme.DarkSurface
 import com.redcuidadora.app.ui.theme.DarkSurfaceVariant
 import com.redcuidadora.app.ui.theme.PrimaryEmerald
@@ -47,13 +52,14 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun CrearSolicitudScreen(
     onNavigateBack: () -> Unit,
-    showPreviewErrorBanner: Boolean = true,
+    showPreviewErrorBanner: Boolean = false,
 ) {
     val context = LocalContext.current
-    var titulo by remember { mutableStateOf("Relevo para clases presenciales") }
-    var horario by remember { mutableStateOf("Mañana 09:30 - 13:00") }
-    var detalles by remember { mutableStateOf("Asistir a taller universitario") }
-    var showErrorBanner by remember { mutableStateOf(showPreviewErrorBanner) }
+    var titulo by remember { mutableStateOf("") }
+    var horario by remember { mutableStateOf("") }
+    var detalles by remember { mutableStateOf("") }
+    var tipo by remember { mutableStateOf<String?>(null) }
+    val action = rememberApiAction()
 
     Column(
         modifier = Modifier
@@ -114,6 +120,34 @@ fun CrearSolicitudScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
+            text = "Tipo de relevo",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimaryDark,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("estudio" to "Estudio", "clases" to "Clases", "compras" to "Compras", "casa" to "Casa").forEach { (value, label) ->
+                val selected = tipo == value
+                FilterChip(
+                    selected = selected,
+                    onClick = { tipo = value },
+                    label = { Text(label, fontSize = 12.sp) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = DarkSurfaceVariant,
+                        selectedContainerColor = PrimaryEmerald,
+                        selectedLabelColor = TextPrimaryDark,
+                        labelColor = TextSecondaryDark,
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true, selected = selected,
+                        borderColor = DarkSurfaceVariant, selectedBorderColor = PrimaryEmerald,
+                    ),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
             text = "Horario y fecha requerida",
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
@@ -123,7 +157,7 @@ fun CrearSolicitudScreen(
         OutlinedTextField(
             value = horario,
             onValueChange = { horario = it },
-            placeholder = { Text("Ej. Mañana 09:30 - 13:00 (3.5 hrs)", color = TextSecondaryDark) },
+            placeholder = { Text("YYYY-MM-DD HH:mm - HH:mm", color = TextSecondaryDark) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -167,12 +201,23 @@ fun CrearSolicitudScreen(
 
         Button(
             onClick = {
-                if (titulo.isBlank() || horario.isBlank()) {
-                    Toast.makeText(context, "Ingresa el título y horario del relevo", Toast.LENGTH_SHORT).show()
-                } else {
-                    showErrorBanner = true
+                action.run("Solicitud de relevo publicada") {
+                    val type = tipo ?: error("Selecciona el tipo de relevo.")
+                    val title = titulo.trim()
+                    require(title.length in 3..80) { "El título debe tener entre 3 y 80 caracteres." }
+                    require(detalles.trim().length in 10..200) { "Los detalles deben tener entre 10 y 200 caracteres." }
+                    val schedule = parseReliefSchedule(horario)
+                    val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
+                    RetrofitClient.getApiService(context).crearSolicitudRelevo(
+                        SolicitudRelevoDto(
+                            solicitanteId = id, titulo = title, tipo = type,
+                            descripcion = detalles.trim(), fecha = schedule.date,
+                            horaInicio = schedule.start, horaFin = schedule.end,
+                        ),
+                    ).requireBody(201)
                 }
             },
+            enabled = !action.busy && !action.success,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -190,10 +235,10 @@ fun CrearSolicitudScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Negative Status Notification Banner (Error)
-        if (showErrorBanner) {
+        if (action.message != null || showPreviewErrorBanner) {
             StatusNotificationBanner(
-                message = "Hubo un error y no se mandó la solicitud",
-                isSuccess = false,
+                message = action.message ?: "Hubo un error y no se mandó la solicitud",
+                isSuccess = action.success,
             )
         }
 

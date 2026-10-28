@@ -44,18 +44,18 @@ fun StatusNotificationBanner(
             .border(2.dp, borderColor, RoundedCornerShape(4.dp))
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
             imageVector = icon,
             contentDescription = if (isSuccess) "Éxito" else "Error",
-            tint = borderColor
+            tint = borderColor,
         )
         Text(
             text = message,
             color = TextPrimaryDark,
             fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }
@@ -69,46 +69,46 @@ fun BannersDemoPreview() {
                 .fillMaxWidth()
                 .background(DarkBackground)
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
                 text = "1. Positivo (Contacto)",
                 color = Color.Gray,
-                fontSize = 12.sp
+                fontSize = 12.sp,
             )
             StatusNotificationBanner(
                 message = "Se añadió el contacto a tu red de confianza",
-                isSuccess = true
+                isSuccess = true,
             )
 
             Text(
                 text = "2. Negativo (Contacto)",
                 color = Color.Gray,
-                fontSize = 12.sp
+                fontSize = 12.sp,
             )
             StatusNotificationBanner(
                 message = "Error inesperado no se añadió el contacto",
-                isSuccess = false
+                isSuccess = false,
             )
 
             Text(
                 text = "3. Positivo (Solicitud)",
                 color = Color.Gray,
-                fontSize = 12.sp
+                fontSize = 12.sp,
             )
             StatusNotificationBanner(
                 message = "Se completó la solicitud correctamente",
-                isSuccess = true
+                isSuccess = true,
             )
 
             Text(
                 text = "4. Negativo (Solicitud)",
                 color = Color.Gray,
-                fontSize = 12.sp
+                fontSize = 12.sp,
             )
             StatusNotificationBanner(
                 message = "Hubo un error y no se mandó la solicitud",
-                isSuccess = false
+                isSuccess = false,
             )
         }
     }

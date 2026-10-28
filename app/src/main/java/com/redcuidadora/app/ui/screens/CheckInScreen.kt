@@ -44,6 +44,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -65,14 +68,13 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 @Composable
 fun CheckInScreen(
     onNavigateBack: () -> Unit,
+    initialLevel: String = "Algo cansada",
 ) {
-    var selectedLevel by remember { mutableStateOf("Algo cansada") }
+    val context = LocalContext.current
+    val action = rememberApiAction()
+    var selectedLevel by remember { mutableStateOf(initialLevel) }
     val selectedFactors = remember {
-        mutableStateListOf(
-            "Semana de certámenes",
-            "Clases / talleres presenciales",
-            "Dormí mal estudiando y cuidando",
-        )
+        mutableStateListOf<String>()
     }
     var notesText by remember { mutableStateOf("") }
 
@@ -275,7 +277,24 @@ fun CheckInScreen(
 
         // Save Button
         Button(
-            onClick = onNavigateBack,
+            onClick = {
+                action.run("Estado guardado", onSuccess = onNavigateBack) {
+                    require(notesText.length <= 200) { "La nota admite hasta 200 caracteres." }
+                    val factors = selectedFactors.joinToString(",")
+                    require(factors.length <= 200) { "Selecciona menos factores (máximo 200 caracteres)." }
+                    val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
+                    val level = when (selectedLevel) {
+                        "Estoy bien" -> "bien"
+                        "Algo cansada" -> "algo_cansada"
+                        "Necesito apoyo" -> "necesito_apoyo"
+                        else -> "sobrepasada"
+                    }
+                    RetrofitClient.getApiService(context).crearCheckIn(
+                        id, CheckInDto(nivel = level, factores = factors.ifBlank { null }, nota = notesText.trim().ifBlank { null }),
+                    ).requireBody(201)
+                }
+            },
+            enabled = !action.busy,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
