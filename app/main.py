@@ -7,9 +7,11 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse
 
-from .routes import (
+from .routers import (
     router_auth,
     router_perfil,
     router_usuarios,
@@ -60,6 +62,17 @@ app.include_router(router_contactos)
 app.include_router(router_relevos)
 app.include_router(router_sos)
 
+@app.exception_handler(RequestValidationError)
+async def manejar_validacion(
+    _: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    errores = [
+        {clave: valor for clave, valor in error.items() if clave not in {"input", "ctx"}}
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": jsonable_encoder(errores)})
+
 
 @app.exception_handler(Exception)
 async def manejar_error_no_controlado(
@@ -68,8 +81,8 @@ async def manejar_error_no_controlado(
 ) -> JSONResponse:
     """Registra internamente y devuelve una respuesta 500 JSON sin filtrar secretos."""
     logger.error(
-        "Error no controlado durante una solicitud",
-        exc_info=(type(exc), exc, exc.__traceback__),
+        "Error no controlado durante una solicitud (%s)",
+        type(exc).__name__,
     )
     return JSONResponse(
         status_code=500,

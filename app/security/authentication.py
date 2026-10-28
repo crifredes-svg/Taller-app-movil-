@@ -1,4 +1,4 @@
-"""Password hashing and per-user JWT bearer authentication."""
+"""Authentication and password hashing operations."""
 
 import os
 from datetime import datetime, timedelta, timezone
@@ -9,8 +9,8 @@ from jose import JWTError, jwt
 from pwdlib import PasswordHash
 from sqlalchemy.orm import Session
 
-from . import models
-from .database import get_db
+from .. import models
+from ..database import get_db
 
 
 JWT_ALGORITHM = "HS256"
