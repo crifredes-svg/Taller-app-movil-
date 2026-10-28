@@ -1,0 +1,354 @@
+package com.redcuidadora.app.ui.screens
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
+import com.redcuidadora.app.ui.navigation.Screen
+import com.redcuidadora.app.ui.theme.DarkSurface
+import com.redcuidadora.app.ui.theme.DarkSurfaceVariant
+import com.redcuidadora.app.ui.theme.PrimaryEmerald
+import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
+import com.redcuidadora.app.ui.theme.StatusAmber
+import com.redcuidadora.app.ui.theme.StatusGreen
+import com.redcuidadora.app.ui.theme.StatusOrange
+import com.redcuidadora.app.ui.theme.StatusRed
+import com.redcuidadora.app.ui.theme.TextPrimaryDark
+import com.redcuidadora.app.ui.theme.TextSecondaryDark
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun CheckInScreen(
+    onNavigateBack: () -> Unit,
+    initialLevel: String = "Algo cansada",
+) {
+    val context = LocalContext.current
+    val action = rememberApiAction()
+    var selectedLevel by remember { mutableStateOf(initialLevel) }
+    val selectedFactors = remember {
+        mutableStateListOf<String>()
+    }
+    var notesText by remember { mutableStateOf("") }
+
+    val levels = listOf(
+        Triple("Estoy bien", "Tranquila y organizada", StatusGreen),
+        Triple("Algo cansada", "Batería baja pero rindiendo", StatusAmber),
+        Triple("Necesito apoyo", "Al límite de mis fuerzas", StatusOrange),
+        Triple("Sobrepasada", "Emergencia, necesito relevo", StatusRed),
+    )
+
+    val factorsList = listOf(
+        "Semana de certámenes",
+        "Clases / talleres presenciales",
+        "Entrega de proyectos",
+        "Dormí mal estudiando y cuidando",
+        "Relevo para no faltar a clases",
+        "Momento de respiro",
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Top Navigation Title
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = TextPrimaryDark,
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Mi Carga (Check-in)",
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimaryDark,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Overload Question
+        Text(
+            text = "¿Cuál es tu nivel de sobrecarga hoy?",
+            style = MaterialTheme.typography.titleLarge,
+            color = TextPrimaryDark,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = "Tu red de apoyo recibirá alertas según tu estado.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondaryDark,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 2x2 Grid for Overload Level Cards
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            levels.chunked(2).forEach { rowLevels ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    rowLevels.forEach { (title, subtitle, color) ->
+                        val isSelected = selectedLevel == title
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { selectedLevel = title },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) color.copy(alpha = 0.2f) else DarkSurface,
+                            ),
+                            border = BorderStroke(
+                                width = if (isSelected) 1.5.dp else 1.dp,
+                                color = if (isSelected) color else DarkSurfaceVariant,
+                            ),
+                            shape = RoundedCornerShape(14.dp),
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .background(color, CircleShape),
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = title,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextPrimaryDark,
+                                        fontSize = 14.sp,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = subtitle,
+                                    fontSize = 11.sp,
+                                    color = TextSecondaryDark,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Factors Multi-Select
+        Text(
+            text = "¿Qué factores influyen hoy? (Multi-select)",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimaryDark,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            factorsList.forEach { factor ->
+                val isSelected = selectedFactors.contains(factor)
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        if (isSelected) {
+                            selectedFactors.remove(factor)
+                        } else {
+                            selectedFactors.add(factor)
+                        }
+                    },
+                    label = { Text(text = factor, fontSize = 12.sp) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = DarkSurface,
+                        selectedContainerColor = PrimaryEmerald,
+                        selectedLabelColor = TextPrimaryDark,
+                        labelColor = TextSecondaryDark,
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = isSelected,
+                        borderColor = DarkSurfaceVariant,
+                        selectedBorderColor = PrimaryEmerald,
+                    ),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Personal Notes / Venting
+        Text(
+            text = "Desahogo / Notas personales",
+            style = MaterialTheme.typography.titleMedium,
+            color = TextPrimaryDark,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = notesText,
+            onValueChange = { notesText = it },
+            placeholder = {
+                Text(
+                    text = "Escribe cómo te sientes... (Sólo visible para ti y coordinadores que elijas)",
+                    color = TextSecondaryDark,
+                    fontSize = 13.sp,
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = DarkSurface,
+                unfocusedContainerColor = DarkSurface,
+                focusedBorderColor = PrimaryEmerald,
+                unfocusedBorderColor = DarkSurfaceVariant,
+                focusedTextColor = TextPrimaryDark,
+                unfocusedTextColor = TextPrimaryDark,
+            ),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Save Button
+        Button(
+            onClick = {
+                action.run("Estado guardado", onSuccess = onNavigateBack) {
+                    require(notesText.length <= 200) { "La nota admite hasta 200 caracteres." }
+                    val factors = selectedFactors.joinToString(",")
+                    require(factors.length <= 200) { "Selecciona menos factores (máximo 200 caracteres)." }
+                    val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
+                    val level = when (selectedLevel) {
+                        "Estoy bien" -> "bien"
+                        "Algo cansada" -> "algo_cansada"
+                        "Necesito apoyo" -> "necesito_apoyo"
+                        else -> "sobrepasada"
+                    }
+                    RetrofitClient.getApiService(context).crearCheckIn(
+                        id, CheckInDto(nivel = level, factores = factors.ifBlank { null }, nota = notesText.trim().ifBlank { null }),
+                    ).requireBody(201)
+                }
+            },
+            enabled = !action.busy,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+            shape = RoundedCornerShape(14.dp),
+        ) {
+            Text(
+                text = "Guardar estado",
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrimaryDark,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Preview(name = "Teléfono - Mi Carga", showBackground = true, showSystemUi = true)
+@Composable
+fun CheckInScreenPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.MiCarga.route,
+                    onNavigateToRoute = {},
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                CheckInScreen(onNavigateBack = {})
+            }
+        }
+    }
+}
+
+@Preview(name = "Tablet - Mi Carga", device = "spec:width=1280dp,height=800dp,dpi=240", showBackground = true, showSystemUi = true)
+@Composable
+fun CheckInScreenTabletPreview() {
+    RedCuidadoraTheme {
+        Scaffold(
+            bottomBar = {
+                RedCuidadoraBottomNavigation(
+                    currentRoute = Screen.MiCarga.route,
+                    onNavigateToRoute = {},
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background,
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                CheckInScreen(onNavigateBack = {})
+            }
+        }
+    }
+}

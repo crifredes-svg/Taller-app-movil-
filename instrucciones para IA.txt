@@ -1,0 +1,181 @@
+Necesito conectar el frontend Android de RedCuidadora con el backend FastAPI existente.
+
+IMPORTANTE:
+- No inventes nombres de archivos, clases, funciones, rutas ni variables.
+- Primero inspecciona el proyecto completo y localiza la implementación existente.
+- Trabaja en cambios pequeños y verificables.
+- No elimines ni reemplaces pantallas completas.
+- Conserva el diseño y los previews actuales.
+- No uses datos simulados si ya existe una fuente real.
+- Antes de modificar, verifica la rama actual con `git branch --show-current` y muéstrame `git status --short`.
+- No hagas commit, push, merge ni cambios de rama sin mi autorización.
+- Si encuentras cambios locales existentes, no los descartes ni los sobrescribas.
+- Antes de escribir código, dime exactamente qué archivos reales necesitas modificar y por qué.
+
+OBJETIVO PRINCIPAL:
+Conectar el selector/toggle de género que ya existe en el frontend con el campo `genero` del backend.
+
+El backend acepta estos valores exactos:
+- `"femenino"`
+- `"masculino"`
+
+No envíes textos visuales como `"Mujer"`, `"Hombre"`, `"Femenino "` con espacios, mayúsculas ni valores booleanos. La interfaz puede mostrar “Femenino” y “Masculino”, pero la API debe recibir exactamente `"femenino"` o `"masculino"`.
+
+CONTRATO ACTUAL DEL BACKEND:
+
+Base de la API:
+- Durante las pruebas locales debes determinar si la app se ejecuta en emulador, dispositivo físico o preview.
+- No uses `localhost` desde Android sin comprobarlo, porque apuntaría al propio dispositivo.
+- Si se usa el emulador estándar de Android y FastAPI corre en el computador, normalmente corresponde usar `http://10.0.2.2:8000/`, pero verifica la configuración real del proyecto antes de cambiarla.
+- Centraliza la URL base en un solo lugar. No la repitas en distintas pantallas.
+
+Crear usuario:
+POST `/api/v1/usuarios`
+
+Body:
+{
+  "nombre": "María",
+  "correo": "maria@ejemplo.cl",
+  "tipo": "estudiante",
+  "genero": "femenino",
+  "persona_cuidada_nombre": "Carlos",
+  "persona_cuidada_edad": 82
+}
+
+Respuesta esperada:
+{
+  "id": 1,
+  "nombre": "María",
+  "correo": "maria@ejemplo.cl",
+  "tipo": "estudiante",
+  "genero": "femenino",
+  "codigo_unico": "XXXXXXXX",
+  "persona_cuidada_nombre": "Carlos",
+  "persona_cuidada_edad": 82
+}
+
+Consultar usuario:
+GET `/api/v1/usuarios/{usuario_id}`
+
+El objeto devuelto incluye:
+- `id`
+- `nombre`
+- `correo`
+- `tipo`
+- `genero`
+- `codigo_unico`
+- `persona_cuidada_nombre`
+- `persona_cuidada_edad`
+
+REGLAS PARA EL TOGGLE DE GÉNERO:
+
+1. Localiza el selector/toggle de género ya implementado.
+2. Determina si está en:
+   - el formulario de creación/registro; o
+   - la pantalla “Mis Datos” de un usuario existente.
+3. No crees otro selector si ya existe.
+4. Mantén un único estado de género en la pantalla.
+5. Convierte la selección visual al valor de API:
+   - opción femenina → `"femenino"`
+   - opción masculina → `"masculino"`
+6. Incluye `genero` en el modelo real de la petición y en el modelo de respuesta.
+7. No guardes el valor solamente en una variable visual: debe enviarse realmente al backend.
+8. Al recuperar el usuario, inicializa el toggle usando el valor `genero` de la respuesta.
+9. El estado del toggle debe sobrevivir a recomposiciones de Jetpack Compose y no cambiarse accidentalmente al rotar o volver a la pantalla.
+10. Si el proyecto ya usa ViewModel, Repository, Retrofit, Ktor, StateFlow, LiveData o un patrón equivalente, respeta esa arquitectura. No introduzcas una segunda arquitectura paralela.
+
+LIMITACIÓN IMPORTANTE DEL BACKEND:
+
+Actualmente el backend permite crear y consultar usuarios, pero no existe todavía una ruta confirmada para actualizar un usuario existente.
+
+Por eso:
+- Si el toggle está en el registro, conéctalo al POST `/api/v1/usuarios`.
+- Si el toggle está en “Mis Datos”, no inventes una ruta PUT o PATCH.
+- En ese caso, detente y explícame que hace falta agregar al backend un endpoint de actualización antes de conectar el guardado.
+- Puedes preparar el estado visual y la lectura del género existente, pero no simules que se guardó si el servidor no dispone de una ruta real.
+
+TEXTOS SEGÚN GÉNERO:
+
+Localiza los textos variables relacionados con el género, especialmente:
+- “Cansada” / “Cansado”
+- “Algo cansada” / “Algo cansado”
+- cualquier otro adjetivo que actualmente esté fijado en femenino.
+
+Reglas:
+- `genero == "femenino"` → usa las variantes femeninas.
+- `genero == "masculino"` → usa las variantes masculinas.
+- Si `genero` es `null` porque corresponde a un usuario antiguo, utiliza un texto neutral o conserva temporalmente el texto actual sin provocar un error.
+- No modifiques nombres técnicos que forman parte del contrato del backend. Por ejemplo, el nivel sigue enviándose con los valores aceptados actualmente por la API; el cambio masculino/femenino debe afectar el texto mostrado, no romper el valor interno enviado.
+
+MANEJO DE RESPUESTAS Y BANNERS:
+
+Conecta los banners existentes a resultados reales de la API.
+
+En caso de éxito:
+- Muestra el banner de éxito correspondiente.
+- Solo muestra éxito después de recibir una respuesta HTTP exitosa.
+- Usa el objeto devuelto por el backend para actualizar el estado local.
+
+En caso de error:
+- No muestres éxito.
+- Lee el campo `detail` de FastAPI cuando esté disponible.
+- Muestra ese mensaje en el banner rojo.
+- Si no existe `detail`, usa un mensaje general comprensible.
+- Distingue al menos errores HTTP, errores de validación y falta de conexión.
+- No muestres trazas técnicas ni excepciones completas al usuario.
+
+CONEXIÓN ANDROID:
+
+1. Revisa si ya están configurados:
+   - permiso de Internet;
+   - cliente HTTP;
+   - serialización JSON;
+   - URL base;
+   - modelos DTO;
+   - Repository o capa de datos;
+   - ViewModel y estado de interfaz.
+2. Reutiliza lo existente.
+3. No agregues dependencias duplicadas.
+4. No cambies versiones de Gradle o Kotlin salvo que sea estrictamente necesario y me expliques primero por qué.
+5. Si la API local usa HTTP y Android bloquea tráfico no cifrado, revisa la configuración existente antes de modificar el Manifest. Aplica la solución mínima solo para desarrollo local.
+6. No realices llamadas de red directamente desde un Composable si el proyecto ya tiene ViewModel o Repository.
+7. Las operaciones deben ser asíncronas y no bloquear la interfaz.
+8. Agrega un estado de carga para impedir múltiples envíos accidentales.
+9. No uses valores fijos de usuario si el proyecto ya conserva el ID del usuario actual.
+10. Si todavía no existe autenticación ni persistencia del usuario actual, señala esa limitación en lugar de inventar una sesión.
+
+VALIDACIÓN:
+
+Antes de considerar terminada la tarea, comprueba:
+
+1. El proyecto compila.
+2. Los previews siguen funcionando o, como mínimo, no intentan realizar llamadas reales de red.
+3. El toggle produce exactamente `"femenino"` o `"masculino"`.
+4. El JSON enviado contiene la propiedad `genero`.
+5. La respuesta se deserializa incluyendo `genero`.
+6. Al abrir nuevamente la pantalla, el selector refleja el valor del backend.
+7. Los textos “Cansada/Cansado” corresponden al género recuperado.
+8. Un error del backend muestra el contenido de `detail` en el banner rojo.
+9. Un éxito real muestra el banner de éxito.
+10. No se modificaron archivos ajenos a esta integración.
+11. Ejecuta `git diff --check` y muestra `git status --short`.
+12. Muéstrame el diff de cada archivo antes de hacer cualquier commit.
+
+FORMA DE TRABAJO:
+
+Primero responde únicamente con:
+1. La rama actual.
+2. El estado de Git.
+3. Los archivos reales que encontraste relacionados con:
+   - toggle de género;
+   - modelos de usuario;
+   - cliente API;
+   - Repository;
+   - ViewModel;
+   - pantalla de registro o “Mis Datos”;
+   - banners.
+4. Una explicación corta del flujo actual.
+5. El plan mínimo de modificación.
+
+No escribas código hasta haber inspeccionado esos archivos y confirmado los nombres reales.
+Después realiza los cambios uno por uno, compilando y verificando tras cada paso.
