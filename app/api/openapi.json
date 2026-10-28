@@ -1,0 +1,2060 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API RedCuidadora",
+    "version": "2.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar Sesion",
+        "operationId": "iniciar_sesion_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Cerrar Sesion",
+        "operationId": "cerrar_sesion_api_v1_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/perfil/me": {
+      "patch": {
+        "tags": [
+          "Perfil"
+        ],
+        "summary": "Actualizar Mi Perfil",
+        "operationId": "actualizar_mi_perfil_api_v1_perfil_me_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerfilUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/usuarios": {
+      "post": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Crear Usuario",
+        "operationId": "crear_usuario_api_v1_usuarios_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistroOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkins/tendencia": {
+      "get": {
+        "tags": [
+          "Mi carga / Check-in"
+        ],
+        "summary": "Consultar Tendencia Carga",
+        "operationId": "consultar_tendencia_carga_api_v1_checkins_tendencia_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TendenciaCargaOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/checkins/usuarios/{usuario_id}": {
+      "post": {
+        "tags": [
+          "Mi carga / Check-in"
+        ],
+        "summary": "Crear Checkin",
+        "operationId": "crear_checkin_api_v1_checkins_usuarios__usuario_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Mi carga / Check-in"
+        ],
+        "summary": "Listar Checkins",
+        "operationId": "listar_checkins_api_v1_checkins_usuarios__usuario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CheckInOut"
+                  },
+                  "title": "Response Listar Checkins Api V1 Checkins Usuarios  Usuario Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contactos/usuarios/{usuario_id}": {
+      "post": {
+        "tags": [
+          "Red de confianza"
+        ],
+        "summary": "Crear Contacto",
+        "operationId": "crear_contacto_api_v1_contactos_usuarios__usuario_id__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactoConfianzaIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactoConfianzaOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Red de confianza"
+        ],
+        "summary": "Listar Contactos",
+        "operationId": "listar_contactos_api_v1_contactos_usuarios__usuario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactoConfianzaOut"
+                  },
+                  "title": "Response Listar Contactos Api V1 Contactos Usuarios  Usuario Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contactos/usuarios/{usuario_id}/por-codigo": {
+      "post": {
+        "tags": [
+          "Red de confianza"
+        ],
+        "summary": "Crear Contacto Por Codigo",
+        "operationId": "crear_contacto_por_codigo_api_v1_contactos_usuarios__usuario_id__por_codigo_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactoPorCodigoIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactoConfianzaOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/contactos/usuarios/{usuario_id}/balance": {
+      "get": {
+        "tags": [
+          "Red de confianza"
+        ],
+        "summary": "Obtener Balance Red",
+        "operationId": "obtener_balance_red_api_v1_contactos_usuarios__usuario_id__balance_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceRedOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/relevos/resumen/semana": {
+      "get": {
+        "tags": [
+          "Solicitudes y calendario"
+        ],
+        "summary": "Obtener Resumen Semana",
+        "operationId": "obtener_resumen_semana_api_v1_relevos_resumen_semana_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumenSemanaOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/relevos": {
+      "post": {
+        "tags": [
+          "Solicitudes y calendario"
+        ],
+        "summary": "Crear Solicitud Relevo",
+        "operationId": "crear_solicitud_relevo_api_v1_relevos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolicitudRelevoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudRelevoOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/relevos/usuarios/{usuario_id}": {
+      "get": {
+        "tags": [
+          "Solicitudes y calendario"
+        ],
+        "summary": "Listar Relevos Usuario",
+        "operationId": "listar_relevos_usuario_api_v1_relevos_usuarios__usuario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudRelevoOut"
+                  },
+                  "title": "Response Listar Relevos Usuario Api V1 Relevos Usuarios  Usuario Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/relevos/{relevo_id}": {
+      "patch": {
+        "tags": [
+          "Solicitudes y calendario"
+        ],
+        "summary": "Actualizar Relevo",
+        "operationId": "actualizar_relevo_api_v1_relevos__relevo_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "relevo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Relevo Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolicitudRelevoEstadoIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudRelevoOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sos": {
+      "post": {
+        "tags": [
+          "SOS"
+        ],
+        "summary": "Activar Sos",
+        "operationId": "activar_sos_api_v1_sos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertaSOSIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaSOSOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/sos/recibidas": {
+      "get": {
+        "tags": [
+          "SOS"
+        ],
+        "summary": "Listar Sos Recibidas",
+        "operationId": "listar_sos_recibidas_api_v1_sos_recibidas_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertaSOSOut"
+                  },
+                  "title": "Response Listar Sos Recibidas Api V1 Sos Recibidas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sos/usuarios/{usuario_id}": {
+      "get": {
+        "tags": [
+          "SOS"
+        ],
+        "summary": "Listar Alertas Sos",
+        "operationId": "listar_alertas_sos_api_v1_sos_usuarios__usuario_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertaSOSOut"
+                  },
+                  "title": "Response Listar Alertas Sos Api V1 Sos Usuarios  Usuario Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sos/{alerta_id}": {
+      "patch": {
+        "tags": [
+          "SOS"
+        ],
+        "summary": "Actualizar Estado Sos",
+        "operationId": "actualizar_estado_sos_api_v1_sos__alerta_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "alerta_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Alerta Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertaSOSEstadoIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaSOSOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlertaSOSEstadoIn": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "pattern": "^(activa|atendida|cerrada)$",
+            "title": "Estado"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "AlertaSOSEstadoIn"
+      },
+      "AlertaSOSIn": {
+        "properties": {
+          "mensaje": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 5,
+            "title": "Mensaje"
+          },
+          "usuario_id": {
+            "type": "integer",
+            "title": "Usuario Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mensaje",
+          "usuario_id"
+        ],
+        "title": "AlertaSOSIn"
+      },
+      "AlertaSOSOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "mensaje": {
+            "type": "string",
+            "title": "Mensaje"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha"
+          },
+          "usuario_id": {
+            "type": "integer",
+            "title": "Usuario Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "mensaje",
+          "estado",
+          "fecha",
+          "usuario_id"
+        ],
+        "title": "AlertaSOSOut"
+      },
+      "BalanceContactoOut": {
+        "properties": {
+          "contacto_id": {
+            "type": "integer",
+            "title": "Contacto Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "relacion": {
+            "type": "string",
+            "title": "Relacion"
+          },
+          "horas_apoyo": {
+            "type": "number",
+            "title": "Horas Apoyo"
+          },
+          "porcentaje": {
+            "type": "number",
+            "title": "Porcentaje"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contacto_id",
+          "nombre",
+          "relacion",
+          "horas_apoyo",
+          "porcentaje"
+        ],
+        "title": "BalanceContactoOut"
+      },
+      "BalanceRedOut": {
+        "properties": {
+          "desde": {
+            "type": "string",
+            "format": "date",
+            "title": "Desde"
+          },
+          "hasta": {
+            "type": "string",
+            "format": "date",
+            "title": "Hasta"
+          },
+          "total_horas": {
+            "type": "number",
+            "title": "Total Horas"
+          },
+          "contactos": {
+            "items": {
+              "$ref": "#/components/schemas/BalanceContactoOut"
+            },
+            "type": "array",
+            "title": "Contactos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "desde",
+          "hasta",
+          "total_horas",
+          "contactos"
+        ],
+        "title": "BalanceRedOut"
+      },
+      "CheckInIn": {
+        "properties": {
+          "nivel": {
+            "type": "string",
+            "pattern": "^(bien|algo_cansada|necesito_apoyo|sobrepasada)$",
+            "title": "Nivel"
+          },
+          "factores": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factores"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nivel"
+        ],
+        "title": "CheckInIn"
+      },
+      "CheckInOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nivel": {
+            "type": "string",
+            "title": "Nivel"
+          },
+          "factores": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Factores"
+          },
+          "nota": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nota"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha"
+          },
+          "usuario_id": {
+            "type": "integer",
+            "title": "Usuario Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nivel",
+          "factores",
+          "nota",
+          "fecha",
+          "usuario_id"
+        ],
+        "title": "CheckInOut"
+      },
+      "ContactoConfianzaIn": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Nombre"
+          },
+          "relacion": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 2,
+            "title": "Relacion"
+          },
+          "apoyos": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 2,
+            "title": "Apoyos"
+          },
+          "disponibilidad": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Disponibilidad"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "relacion",
+          "apoyos",
+          "disponibilidad"
+        ],
+        "title": "ContactoConfianzaIn",
+        "description": "Conserva el método anterior para crear un contacto introduciendo\ndirectamente sus datos."
+      },
+      "ContactoConfianzaOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "relacion": {
+            "type": "string",
+            "title": "Relacion"
+          },
+          "apoyos": {
+            "type": "string",
+            "title": "Apoyos"
+          },
+          "disponibilidad": {
+            "type": "string",
+            "title": "Disponibilidad"
+          },
+          "usuario_id": {
+            "type": "integer",
+            "title": "Usuario Id"
+          },
+          "contacto_usuario_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contacto Usuario Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "relacion",
+          "apoyos",
+          "disponibilidad",
+          "usuario_id",
+          "contacto_usuario_id"
+        ],
+        "title": "ContactoConfianzaOut"
+      },
+      "ContactoPorCodigoIn": {
+        "properties": {
+          "codigo_unico": {
+            "type": "string",
+            "maxLength": 11,
+            "minLength": 6,
+            "title": "Codigo Unico"
+          },
+          "relacion": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 2,
+            "title": "Relacion"
+          },
+          "apoyos": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apoyos"
+          },
+          "disponibilidad": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disponibilidad"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo_unico",
+          "relacion"
+        ],
+        "title": "ContactoPorCodigoIn",
+        "description": "Añade a una persona ya registrada usando su código único."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthOut"
+      },
+      "LoginIn": {
+        "properties": {
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "title": "Correo"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "correo",
+          "password"
+        ],
+        "title": "LoginIn"
+      },
+      "LogoutOut": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "LogoutOut"
+      },
+      "PerfilUpdate": {
+        "properties": {
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "ocupacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocupacion"
+          },
+          "tipo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(estudiante|red)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tipo"
+          },
+          "genero": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(femenino|masculino)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genero"
+          },
+          "persona_cuidada_nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Nombre"
+          },
+          "persona_cuidada_edad": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 130.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Edad"
+          }
+        },
+        "type": "object",
+        "title": "PerfilUpdate"
+      },
+      "RegistroOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "correo": {
+            "type": "string",
+            "title": "Correo"
+          },
+          "ocupacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocupacion"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "genero": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genero"
+          },
+          "codigo_unico": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Unico"
+          },
+          "persona_cuidada_nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Nombre"
+          },
+          "persona_cuidada_edad": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Edad"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": "Cuenta creada correctamente"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "correo",
+          "ocupacion",
+          "tipo",
+          "genero",
+          "codigo_unico",
+          "persona_cuidada_nombre",
+          "persona_cuidada_edad"
+        ],
+        "title": "RegistroOut"
+      },
+      "ResumenSemanaOut": {
+        "properties": {
+          "desde": {
+            "type": "string",
+            "format": "date",
+            "title": "Desde"
+          },
+          "hasta": {
+            "type": "string",
+            "format": "date",
+            "title": "Hasta"
+          },
+          "horas_protegidas": {
+            "type": "number",
+            "title": "Horas Protegidas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "desde",
+          "hasta",
+          "horas_protegidas"
+        ],
+        "title": "ResumenSemanaOut"
+      },
+      "SolicitudRelevoEstadoIn": {
+        "properties": {
+          "estado": {
+            "type": "string",
+            "pattern": "^(pendiente|aceptada|completada)$",
+            "title": "Estado"
+          },
+          "cuidador_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuidador Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "SolicitudRelevoEstadoIn"
+      },
+      "SolicitudRelevoIn": {
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Titulo"
+          },
+          "tipo": {
+            "type": "string",
+            "pattern": "^(estudio|clases|compras|casa)$",
+            "title": "Tipo"
+          },
+          "descripcion": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 10,
+            "title": "Descripcion"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha"
+          },
+          "hora_inicio": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Hora Inicio"
+          },
+          "hora_fin": {
+            "type": "string",
+            "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+            "title": "Hora Fin"
+          },
+          "solicitante_id": {
+            "type": "integer",
+            "title": "Solicitante Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "titulo",
+          "tipo",
+          "descripcion",
+          "fecha",
+          "hora_inicio",
+          "hora_fin",
+          "solicitante_id"
+        ],
+        "title": "SolicitudRelevoIn"
+      },
+      "SolicitudRelevoOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "titulo": {
+            "type": "string",
+            "title": "Titulo"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha"
+          },
+          "hora_inicio": {
+            "type": "string",
+            "title": "Hora Inicio"
+          },
+          "hora_fin": {
+            "type": "string",
+            "title": "Hora Fin"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "solicitante_id": {
+            "type": "integer",
+            "title": "Solicitante Id"
+          },
+          "cuidador_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cuidador Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "titulo",
+          "tipo",
+          "descripcion",
+          "fecha",
+          "hora_inicio",
+          "hora_fin",
+          "estado",
+          "solicitante_id",
+          "cuidador_id"
+        ],
+        "title": "SolicitudRelevoOut"
+      },
+      "TendenciaCargaOut": {
+        "properties": {
+          "dias_evaluados": {
+            "type": "integer",
+            "title": "Dias Evaluados"
+          },
+          "dias_alta_carga": {
+            "type": "integer",
+            "title": "Dias Alta Carga"
+          },
+          "sugerir_pedir_apoyo": {
+            "type": "boolean",
+            "title": "Sugerir Pedir Apoyo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dias_evaluados",
+          "dias_alta_carga",
+          "sugerir_pedir_apoyo"
+        ],
+        "title": "TendenciaCargaOut"
+      },
+      "TokenOut": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/UsuarioOut"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail",
+            "default": "Inicio de sesión correcto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in",
+          "usuario"
+        ],
+        "title": "TokenOut"
+      },
+      "UsuarioIn": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Nombre"
+          },
+          "correo": {
+            "type": "string",
+            "format": "email",
+            "title": "Correo"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 12,
+            "title": "Password"
+          },
+          "ocupacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocupacion"
+          },
+          "tipo": {
+            "type": "string",
+            "pattern": "^(estudiante|red)$",
+            "title": "Tipo",
+            "default": "estudiante"
+          },
+          "genero": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(femenino|masculino)$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genero"
+          },
+          "persona_cuidada_nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Nombre"
+          },
+          "persona_cuidada_edad": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 130.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Edad"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "correo",
+          "password"
+        ],
+        "title": "UsuarioIn"
+      },
+      "UsuarioOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "correo": {
+            "type": "string",
+            "title": "Correo"
+          },
+          "ocupacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocupacion"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "genero": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Genero"
+          },
+          "codigo_unico": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Unico"
+          },
+          "persona_cuidada_nombre": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Nombre"
+          },
+          "persona_cuidada_edad": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persona Cuidada Edad"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "correo",
+          "ocupacion",
+          "tipo",
+          "genero",
+          "codigo_unico",
+          "persona_cuidada_nombre",
+          "persona_cuidada_edad"
+        ],
+        "title": "UsuarioOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
