@@ -1,5 +1,6 @@
 package com.redcuidadora.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -64,6 +65,16 @@ import com.redcuidadora.app.ui.theme.StatusRed
 import com.redcuidadora.app.ui.theme.TextPrimaryDark
 import com.redcuidadora.app.ui.theme.TextSecondaryDark
 
+private fun formatGeneroText(text: String, genero: String?): String {
+    if (genero == "masculino") {
+        return text
+            .replace("cuidadora", "cuidador", ignoreCase = true)
+            .replace("Cansada", "Cansado", ignoreCase = true)
+            .replace("ACTIVA", "ACTIVO", ignoreCase = true)
+    }
+    return text
+}
+
 @Composable
 fun HomeScreen(
     onNavigateToSolicitudes: () -> Unit,
@@ -95,7 +106,7 @@ fun HomeScreen(
         "sobrepasada" -> "Sobrepasada"
         else -> ""
     }
-    val next = relief.data?.filter { it.estado == "aceptada" && it.fecha >= todayIso() }
+    val next = relief.data?.asSequence()?.filter { (it.estado == "aceptada") && (it.fecha >= todayIso()) }
         ?.sortedWith(compareBy<SolicitudRelevoDto> { it.fecha }.thenBy { it.horaInicio })?.firstOrNull()
     val activeAlert = alerts.data?.firstOrNull { it.estado == "activa" }
     val alertText = when {
@@ -155,7 +166,7 @@ fun HomeScreen(
                 }
             },
             containerColor = DarkSurface,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         )
     }
 
@@ -165,7 +176,7 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(rememberScrollState()),
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -180,26 +191,26 @@ fun HomeScreen(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "RedCuidadora",
                 style = MaterialTheme.typography.headlineLarge,
                 color = PrimaryEmerald,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             Button(
                 onClick = { showSosDialog = true },
                 colors = ButtonDefaults.buttonColors(containerColor = StatusRed),
                 shape = CircleShape,
-                modifier = Modifier.height(36.dp)
+                modifier = Modifier.height(36.dp),
             ) {
                 Text(
                     text = "SOS",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
                 )
             }
         }
@@ -212,30 +223,31 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .clickable { onNavigateToPerfil() },
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = user.data?.let { "Hola, ${it.nombre} 👋" } ?: user.message,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = TextPrimaryDark
+                        color = TextPrimaryDark,
                     )
 
                     Surface(
                         color = PrimaryEmerald.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
                     ) {
+                        val generoUsuario = user.data?.genero
                         Text(
-                            text = "ACTIVA",
+                            text = formatGeneroText("ACTIVA", generoUsuario),
                             color = PrimaryEmerald,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         )
                     }
                 }
@@ -243,14 +255,16 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = user.data?.let {
+                    text = user.data?.let { u ->
+                        val generoUsuario = u.genero
+                        val ocupacionFormateada = formatGeneroText(u.ocupacion ?: "Estudiante y cuidadora", generoUsuario)
                         listOfNotNull(
-                            it.ocupacion?.takeIf(String::isNotBlank),
-                            it.personaCuidadaNombre?.let { name -> "Cuidando a $name${it.personaCuidadaEdad?.let { age -> " ($age años)" }.orEmpty()}" },
+                            ocupacionFormateada.takeIf(String::isNotBlank),
+                            u.personaCuidadaNombre?.let { name -> "Cuidando a $name${u.personaCuidadaEdad?.let { age -> " ($age años)" }.orEmpty()}" },
                         ).joinToString(" • ").ifBlank { "Completa tus datos en Mi Perfil" }
                     } ?: "",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryDark
+                    color = TextSecondaryDark,
                 )
             }
         }
@@ -262,7 +276,7 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = StatusAmber.copy(alpha = 0.12f)),
             shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, StatusAmber.copy(alpha = 0.4f))
+            border = BorderStroke(1.dp, StatusAmber.copy(alpha = 0.4f)),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.Top) {
@@ -270,13 +284,13 @@ fun HomeScreen(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "Alerta",
                         tint = StatusAmber,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = alertText,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextPrimaryDark
+                        color = TextPrimaryDark,
                     )
                 }
 
@@ -285,12 +299,12 @@ fun HomeScreen(
                 Button(
                     onClick = onNavigateToSolicitudes,
                     colors = ButtonDefaults.buttonColors(containerColor = StatusAmber),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
                 ) {
                     Text(
                         text = "Pedir relevo",
                         color = Color.Black,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -303,55 +317,59 @@ fun HomeScreen(
             text = "¿Cómo te sientes hoy?",
             style = MaterialTheme.typography.titleMedium,
             color = TextPrimaryDark,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
 
         Spacer(modifier = Modifier.height(10.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val moods = listOf(
                 "Bien" to StatusGreen,
                 "Cansada" to StatusAmber,
                 "Apoyo" to StatusOrange,
-                "Sobrepasada" to StatusRed
+                "Sobrepasada" to StatusRed,
             )
 
             moods.forEach { (mood, color) ->
                 val isSelected = selectedMood == mood
+                val generoUsuario = user.data?.genero
+                val moodText = formatGeneroText(mood, generoUsuario)
                 FilterChip(
                     selected = isSelected,
                     onClick = {
-                        onNavigateToCheckIn(when (mood) {
-                            "Bien" -> "Estoy bien"
-                            "Cansada" -> "Algo cansada"
-                            "Apoyo" -> "Necesito apoyo"
-                            else -> "Sobrepasada"
-                        })
+                        onNavigateToCheckIn(
+                            when (mood) {
+                                "Bien" -> "Estoy bien"
+                                "Cansada" -> if (generoUsuario == "masculino") "Algo cansado" else "Algo cansada"
+                                "Apoyo" -> "Necesito apoyo"
+                                else -> "Sobrepasada"
+                            },
+                        )
                     },
                     label = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
                                     .size(10.dp)
-                                    .background(color, CircleShape)
+                                    .background(color, CircleShape),
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(text = mood, color = TextPrimaryDark, fontSize = 13.sp)
+                            Text(text = moodText, color = TextPrimaryDark, fontSize = 13.sp)
                         }
                     },
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = DarkSurfaceVariant,
-                        selectedContainerColor = color.copy(alpha = 0.3f)
+                        selectedContainerColor = color.copy(alpha = 0.3f),
                     ),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = isSelected,
                         borderColor = DarkSurfaceVariant,
-                        selectedBorderColor = color
-                    )
+                        selectedBorderColor = color,
+                    ),
                 )
             }
         }
@@ -362,7 +380,7 @@ fun HomeScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = DarkSurface),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -370,60 +388,60 @@ fun HomeScreen(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = "Calendario",
                         tint = PrimaryEmerald,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "PRÓXIMO RELEVO",
                         style = MaterialTheme.typography.labelMedium,
                         color = PrimaryEmerald,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = next?.let { item ->
-                        val caregiver = contacts.data?.find { it.contactoUsuarioId == item.cuidadorId }?.nombre
-                            ?: if (item.cuidadorId == userId) "Ti" else "usuario #${item.cuidadorId}"
-                        "${item.fecha} ${item.horaInicio} - ${item.titulo}, cubierto por $caregiver"
-                    } ?: if (relief.data == null) relief.message else "No tienes próximos relevos confirmados.",
+                    text = next?.let { "Mañana ${it.horaInicio} - ${it.titulo} cubierto por ${it.cuidadorId ?: "alguien de la red"}" }
+                        ?: "No tienes próximos relevos confirmados.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimaryDark,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Main SOS Button
+        // Big Emergency SOS Button Card
         Button(
             onClick = { showSosDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
-            shape = RoundedCornerShape(14.dp)
+            shape = RoundedCornerShape(14.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
                 Icon(
-                    imageVector = Icons.Default.Shield,
-                    contentDescription = "SOS",
-                    tint = TextPrimaryDark
+                    imageVector = Icons.Default.Security,
+                    contentDescription = "Escudo",
+                    tint = TextPrimaryDark,
                 )
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Activar SOS de Confianza",
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimaryDark,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -435,8 +453,7 @@ fun HomeScreenPreview() {
             bottomBar = {
                 RedCuidadoraBottomNavigation(
                     currentRoute = Screen.Home.route,
-                    onNavigateToRoute = {},
-                )
+                ) {}
             },
             containerColor = MaterialTheme.colorScheme.background,
         ) { innerPadding ->
@@ -454,21 +471,9 @@ fun HomeScreenPreview() {
 @Composable
 fun HomeScreenTabletPreview() {
     RedCuidadoraTheme {
-        Scaffold(
-            bottomBar = {
-                RedCuidadoraBottomNavigation(
-                    currentRoute = Screen.Home.route,
-                    onNavigateToRoute = {},
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.background
-        ) { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding)) {
-                HomeScreen(
-                    onNavigateToSolicitudes = {},
-                    onNavigateToCheckIn = {}
-                )
-            }
-        }
+        HomeScreen(
+            onNavigateToSolicitudes = {},
+            onNavigateToCheckIn = {},
+        )
     }
 }
