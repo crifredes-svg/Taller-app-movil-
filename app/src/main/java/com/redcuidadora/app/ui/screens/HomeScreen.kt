@@ -68,7 +68,6 @@ import com.redcuidadora.app.ui.theme.TextSecondaryDark
 private fun formatGeneroText(text: String, genero: String?): String {
     if (genero == "masculino") {
         return text
-            .replace("cuidadora", "cuidador", ignoreCase = true)
             .replace("Cansada", "Cansado", ignoreCase = true)
             .replace("ACTIVA", "ACTIVO", ignoreCase = true)
     }
@@ -256,10 +255,8 @@ fun HomeScreen(
 
                 Text(
                     text = user.data?.let { u ->
-                        val generoUsuario = u.genero
-                        val ocupacionFormateada = formatGeneroText(u.ocupacion ?: "Estudiante y cuidadora", generoUsuario)
                         listOfNotNull(
-                            ocupacionFormateada.takeIf(String::isNotBlank),
+                            u.ocupacion?.takeIf(String::isNotBlank),
                             u.personaCuidadaNombre?.let { name -> "Cuidando a $name${u.personaCuidadaEdad?.let { age -> " ($age años)" }.orEmpty()}" },
                         ).joinToString(" • ").ifBlank { "Completa tus datos en Mi Perfil" }
                     } ?: "",
@@ -453,7 +450,8 @@ fun HomeScreenPreview() {
             bottomBar = {
                 RedCuidadoraBottomNavigation(
                     currentRoute = Screen.Home.route,
-                ) {}
+                    onNavigateToRoute = { _ -> },
+                )
             },
             containerColor = MaterialTheme.colorScheme.background,
         ) { innerPadding ->

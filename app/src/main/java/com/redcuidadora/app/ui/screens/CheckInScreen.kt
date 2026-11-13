@@ -45,12 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.redcuidadora.app.data.local.TokenManager
-import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
+import com.redcuidadora.app.ui.components.StatusNotificationBanner3
 import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
 import com.redcuidadora.app.ui.navigation.Screen
 import com.redcuidadora.app.ui.theme.DarkSurface
@@ -78,9 +79,12 @@ fun CheckInScreen(
     }
     var notesText by remember { mutableStateOf("") }
 
+    val currentUser = TokenManager.getUser(context)
+    val isMale = currentUser?.genero == "masculino"
+
     val levels = listOf(
-        Triple("Estoy bien", "Tranquila y organizada", StatusGreen),
-        Triple("Algo cansada", "Batería baja pero rindiendo", StatusAmber),
+        Triple("Estoy bien", if (isMale) "Tranquilo y organizado" else "Tranquila y organizada", StatusGreen),
+        Triple(if (isMale) "Algo cansado" else "Algo cansada", "Batería baja pero rindiendo", StatusAmber),
         Triple("Necesito apoyo", "Al límite de mis fuerzas", StatusOrange),
         Triple("Sobrepasada", "Emergencia, necesito relevo", StatusRed),
     )
@@ -150,7 +154,7 @@ fun CheckInScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     rowLevels.forEach { (title, subtitle, color) ->
-                        val isSelected = selectedLevel == title
+                        val isSelected = selectedLevel == title || (isMale && title == "Algo cansado" && selectedLevel == "Algo cansada") || (!isMale && title == "Algo cansada" && selectedLevel == "Algo cansado")
                         Card(
                             modifier = Modifier
                                 .weight(1f)
@@ -275,22 +279,29 @@ fun CheckInScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        if (action.message != null) {
+            StatusNotificationBanner3(message = action.message!!, isSuccess = action.success)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // Save Button
         Button(
             onClick = {
-                action.run("Estado guardado", onSuccess = onNavigateBack) {
-                    require(notesText.length <= 200) { "La nota admite hasta 200 caracteres." }
-                    val factors = selectedFactors.joinToString(",")
-                    require(factors.length <= 200) { "Selecciona menos factores (máximo 200 caracteres)." }
-                    val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
-                    val level = when (selectedLevel) {
-                        "Estoy bien" -> "bien"
-                        "Algo cansada" -> "algo_cansada"
-                        "Necesito apoyo" -> "necesito_apoyo"
-                        else -> "sobrepasada"
-                    }
+                val nivelBackend = when (selectedLevel) {
+                    "Estoy bien", "Bien" -> "bien"
+                    "Algo cansada", "Algo cansado" -> "algo_cansada"
+                    "Necesito apoyo", "Apoyo" -> "necesito_apoyo"
+                    else -> "sobrepasada"
+                }
+                val userId = TokenManager.getUserId(context)
+                action.run("Estado de carga guardado exitosamente.", onSuccess = { onNavigateBack() }) {
                     RetrofitClient.getApiService(context).crearCheckIn(
-                        id, CheckInDto(nivel = level, factores = factors.ifBlank { null }, nota = notesText.trim().ifBlank { null }),
+                        userId ?: error("Inicia sesión nuevamente."),
+                        CheckInDto(
+                            nivel = nivelBackend,
+                            factores = if (selectedFactors.isEmpty()) null else selectedFactors.joinToString(", "),
+                            nota = notesText.ifBlank { null },
+                        ),
                     ).requireBody(201)
                 }
             },
@@ -302,7 +313,7 @@ fun CheckInScreen(
             shape = RoundedCornerShape(14.dp),
         ) {
             Text(
-                text = "Guardar estado",
+                text = if (action.busy) "Guardando..." else "Guardar estado",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimaryDark,
                 fontWeight = FontWeight.Bold,
