@@ -69,6 +69,7 @@ private fun formatGeneroText(text: String, genero: String?): String {
     if (genero == "masculino") {
         return text
             .replace("Cansada", "Cansado", ignoreCase = true)
+            .replace("Sobrepasada", "Sobrepasado", ignoreCase = true)
             .replace("ACTIVA", "ACTIVO", ignoreCase = true)
     }
     return text
@@ -342,7 +343,7 @@ fun HomeScreen(
                                 "Bien" -> "Estoy bien"
                                 "Cansada" -> if (generoUsuario == "masculino") "Algo cansado" else "Algo cansada"
                                 "Apoyo" -> "Necesito apoyo"
-                                else -> "Sobrepasada"
+                                else -> if (generoUsuario == "masculino") "Sobrepasado" else "Sobrepasada"
                             },
                         )
                     },
