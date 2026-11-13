@@ -4,16 +4,18 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.redcuidadora.app.data.network.UsuarioDto
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 
+@Suppress("unused")
 object TokenManager {
-    private val sessionRevision = MutableStateFlow(0)
-    val changes = sessionRevision.asStateFlow()
     private const val PREF_NAME = "redcuidadora_session_prefs"
     private const val KEY_ACCESS_TOKEN = "access_token"
     private const val KEY_EXPIRES_AT = "expires_at_timestamp"
     private const val KEY_USER_DATA = "user_data_json"
+
+    private val _changes = MutableSharedFlow<Unit>(replay = 1)
+    val changes: SharedFlow<Unit> = _changes
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -28,6 +30,14 @@ object TokenManager {
             .putLong(KEY_EXPIRES_AT, expiresAt)
             .putString(KEY_USER_DATA, userJson)
             .apply()
+        _changes.tryEmit(Unit)
+    }
+
+    fun updateUser(context: Context, user: UsuarioDto) {
+        val prefs = getPrefs(context)
+        val userJson = Gson().toJson(user)
+        prefs.edit().putString(KEY_USER_DATA, userJson).apply()
+        _changes.tryEmit(Unit)
     }
 
     fun getToken(context: Context): String? {
@@ -55,17 +65,12 @@ object TokenManager {
         return getUser(context)?.id
     }
 
-    fun updateUser(context: Context, user: UsuarioDto) {
-        getPrefs(context).edit().putString(KEY_USER_DATA, Gson().toJson(user.copy(password = null))).apply()
-    }
-
     fun isLoggedIn(context: Context): Boolean {
         return getToken(context) != null
     }
 
     fun clearSession(context: Context) {
-        val hadSession = getPrefs(context).contains(KEY_ACCESS_TOKEN)
         getPrefs(context).edit().clear().apply()
-        if (hadSession) sessionRevision.value += 1
+        _changes.tryEmit(Unit)
     }
 }
