@@ -86,7 +86,7 @@ fun CheckInScreen(
         Triple("Estoy bien", if (isMale) "Tranquilo y organizado" else "Tranquila y organizada", StatusGreen),
         Triple(if (isMale) "Algo cansado" else "Algo cansada", "Batería baja pero rindiendo", StatusAmber),
         Triple("Necesito apoyo", "Al límite de mis fuerzas", StatusOrange),
-        Triple("Sobrepasada", "Emergencia, necesito relevo", StatusRed),
+        Triple(if (isMale) "Sobrepasado" else "Sobrepasada", "Emergencia, necesito relevo", StatusRed),
     )
 
     val factorsList = listOf(
@@ -154,7 +154,9 @@ fun CheckInScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     rowLevels.forEach { (title, subtitle, color) ->
-                        val isSelected = selectedLevel == title || (isMale && title == "Algo cansado" && selectedLevel == "Algo cansada") || (!isMale && title == "Algo cansada" && selectedLevel == "Algo cansado")
+                        val isSelected = (selectedLevel == title) ||
+                            ((isMale) && ((title == "Algo cansado") || (title == "Sobrepasado")) && ((selectedLevel == "Algo cansada") || (selectedLevel == "Sobrepasada"))) ||
+                            ((!isMale) && ((title == "Algo cansada") || (title == "Sobrepasada")) && ((selectedLevel == "Algo cansado") || (selectedLevel == "Sobrepasado")))
                         Card(
                             modifier = Modifier
                                 .weight(1f)
