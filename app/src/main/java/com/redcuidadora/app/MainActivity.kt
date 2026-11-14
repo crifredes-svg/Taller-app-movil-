@@ -13,7 +13,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,7 +35,6 @@ import com.redcuidadora.app.ui.screens.PerfilScreen
 import com.redcuidadora.app.ui.screens.RedScreen
 import com.redcuidadora.app.ui.screens.SolicitudesScreen
 import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
-import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -63,33 +61,6 @@ class MainActivity : ComponentActivity() {
 
                 val startRoute = remember {
                     if (TokenManager.isLoggedIn(this@MainActivity)) Screen.Home.route else Screen.Login.route
-                }
-
-                LaunchedEffect(navController) {
-                    TokenManager.changes.collect {
-                        if (!TokenManager.isLoggedIn(this@MainActivity) &&
-                            navController.currentDestination?.route != Screen.Login.route
-                        ) {
-                            showActionChoiceSheet = false
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-                }
-                LaunchedEffect(currentRoute) {
-                    while (currentRoute != null && currentRoute != Screen.Login.route) {
-                        if (!TokenManager.isLoggedIn(this@MainActivity)) {
-                            showActionChoiceSheet = false
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                            break
-                        }
-                        delay(1000)
-                    }
                 }
 
                 Scaffold(

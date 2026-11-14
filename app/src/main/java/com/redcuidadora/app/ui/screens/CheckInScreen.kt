@@ -79,10 +79,12 @@ fun CheckInScreen(
     }
     var notesText by remember { mutableStateOf("") }
 
-    val currentUser = try {
-        TokenManager.getUser(context)
-    } catch (_: Exception) {
-        null
+    val currentUser = remember(context) {
+        try {
+            TokenManager.getUser(context)
+        } catch (_: Exception) {
+            null
+        }
     }
     val isMale = currentUser?.genero?.lowercase() == "masculino"
 
