@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,6 +77,7 @@ private fun formatGeneroText(text: String, genero: String?): String {
     return text
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(
     onNavigateToSolicitudes: () -> Unit,
@@ -310,7 +313,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Mood Check-in Selector
+        // Mood Check-in Selector (Using FlowRow to wrap chips cleanly without breaking text)
         Text(
             text = "¿Cómo te sientes hoy?",
             style = MaterialTheme.typography.titleMedium,
@@ -320,9 +323,10 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val moods = listOf(
                 "Bien" to StatusGreen,
