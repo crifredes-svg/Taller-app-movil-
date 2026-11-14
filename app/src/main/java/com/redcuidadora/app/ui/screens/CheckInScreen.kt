@@ -79,8 +79,12 @@ fun CheckInScreen(
     }
     var notesText by remember { mutableStateOf("") }
 
-    val currentUser = TokenManager.getUser(context)
-    val isMale = currentUser?.genero == "masculino"
+    val currentUser = try {
+        TokenManager.getUser(context)
+    } catch (_: Exception) {
+        null
+    }
+    val isMale = currentUser?.genero?.lowercase() == "masculino"
 
     val levels = listOf(
         Triple("Estoy bien", if (isMale) "Tranquilo y organizado" else "Tranquila y organizada", StatusGreen),
@@ -295,10 +299,18 @@ fun CheckInScreen(
                     "Necesito apoyo", "Apoyo" -> "necesito_apoyo"
                     else -> "sobrepasada"
                 }
-                val userId = TokenManager.getUserId(context)
+                val userId = try {
+                    TokenManager.getUserId(context)
+                } catch (_: Exception) {
+                    null
+                }
+                if (userId == null) {
+                    action.run("Inicia sesión nuevamente para guardar el estado.", onSuccess = {}) {}
+                    return@Button
+                }
                 action.run("Estado de carga guardado exitosamente.", onSuccess = { onNavigateBack() }) {
                     RetrofitClient.getApiService(context).crearCheckIn(
-                        userId ?: error("Inicia sesión nuevamente."),
+                        userId,
                         CheckInDto(
                             nivel = nivelBackend,
                             factores = if (selectedFactors.isEmpty()) null else selectedFactors.joinToString(", "),
