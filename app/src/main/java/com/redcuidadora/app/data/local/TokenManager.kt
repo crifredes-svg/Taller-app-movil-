@@ -17,31 +17,40 @@ object TokenManager {
     private val _changes = MutableSharedFlow<Unit>(replay = 1)
     val changes: SharedFlow<Unit> = _changes
 
-    private fun getPrefs(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private fun getPrefs(context: Context?): SharedPreferences? {
+        return try {
+            context?.applicationContext?.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun saveSession(context: Context, token: String, expiresInSeconds: Long, user: UsuarioDto?) {
         val expiresAt = System.currentTimeMillis() + (expiresInSeconds * 1000)
         val userJson = if (user != null) Gson().toJson(user) else null
 
-        getPrefs(context).edit()
-            .putString(KEY_ACCESS_TOKEN, token)
-            .putLong(KEY_EXPIRES_AT, expiresAt)
-            .putString(KEY_USER_DATA, userJson)
-            .apply()
+        val prefs = getPrefs(context)
+        val editor = prefs?.edit()
+        editor?.putString(KEY_ACCESS_TOKEN, token)
+        editor?.putLong(KEY_EXPIRES_AT, expiresAt)
+        editor?.putString(KEY_USER_DATA, userJson)
+        editor?.apply()
+
         _changes.tryEmit(Unit)
     }
 
     fun updateUser(context: Context, user: UsuarioDto) {
-        val prefs = getPrefs(context)
         val userJson = Gson().toJson(user)
-        prefs.edit().putString(KEY_USER_DATA, userJson).apply()
+        val prefs = getPrefs(context)
+        val editor = prefs?.edit()
+        editor?.putString(KEY_USER_DATA, userJson)
+        editor?.apply()
+
         _changes.tryEmit(Unit)
     }
 
     fun getToken(context: Context): String? {
-        val prefs = getPrefs(context)
+        val prefs = getPrefs(context) ?: return null
         val token = prefs.getString(KEY_ACCESS_TOKEN, null)
         val expiresAt = prefs.getLong(KEY_EXPIRES_AT, 0L)
 
@@ -53,7 +62,7 @@ object TokenManager {
     }
 
     fun getUser(context: Context): UsuarioDto? {
-        val userJson = getPrefs(context).getString(KEY_USER_DATA, null) ?: return null
+        val userJson = getPrefs(context)?.getString(KEY_USER_DATA, null) ?: return null
         return try {
             Gson().fromJson(userJson, UsuarioDto::class.java)
         } catch (_: Exception) {
@@ -70,7 +79,12 @@ object TokenManager {
     }
 
     fun clearSession(context: Context) {
-        getPrefs(context).edit().clear().apply()
+        try {
+            val prefs = getPrefs(context)
+            val editor = prefs?.edit()
+            editor?.clear()
+            editor?.apply()
+        } catch (_: Exception) {}
         _changes.tryEmit(Unit)
     }
 }

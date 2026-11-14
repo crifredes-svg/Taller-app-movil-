@@ -187,9 +187,6 @@ interface ApiService {
     @GET("api/v1/relevos/usuarios/{usuario_id}")
     suspend fun listarRelevosUsuario(@Path("usuario_id") usuarioId: Int, @Query("offset") offset: Int = 0): Response<List<SolicitudRelevoDto>>
 
-    @GET("api/v1/relevos/disponibles")
-    suspend fun listarRelevosDisponibles(@Query("offset") offset: Int = 0): Response<List<SolicitudRelevoDto>>
-
     @GET("api/v1/relevos/resumen/semana")
     suspend fun obtenerResumenSemana(): Response<ResumenSemanaDto>
 
