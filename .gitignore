@@ -1,0 +1,22 @@
+# Archivos del sistema e IDEs
+.DS_Store
+.vscode/
+.idea/
+
+# Gradle y Android local
+.gradle/
+build/
+app/build/
+local.properties
+
+# Dependencias y compilados
+node_modules/
+dist/
+__pycache__/
+.venv/
+venv/
+.pytest_cache/
+*.py[cod]
+
+# Variables de entorno
+.env

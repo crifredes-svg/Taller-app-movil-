@@ -1,0 +1,23 @@
+"""Add optional occupation text to user profiles."""
+
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+revision: str = "a36bf49d8c12"
+down_revision: Union[str, Sequence[str], None] = "f1d7a63c9b20"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    op.add_column(
+        "usuarios",
+        sa.Column("ocupacion", sa.String(length=100), nullable=True),
+    )
+
+
+def downgrade() -> None:
+    op.drop_column("usuarios", "ocupacion")

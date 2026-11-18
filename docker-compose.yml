@@ -1,0 +1,33 @@
+services:
+  # Servicio Backend / API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: redcuidadora_backend
+    restart: always
+    ports:
+      - "${PORT:-9000}:8000"
+    environment:
+      DB_HOST: ${DB_HOST:-mysql}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_USER: ${DB_USER:-redcuidadora_app}
+      DB_PASSWORD: ${DB_PASSWORD:-clave_segura}
+      DB_NAME: ${DB_NAME:-redcuidadora_db}
+      JWT_SECRET: ${JWT_SECRET:-tu_clave_secreta_para_desarrollo_local}
+    networks:
+      - 1panel-network
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  1panel-network:
+    external: true
