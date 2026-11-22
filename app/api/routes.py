@@ -18,6 +18,8 @@ from ..routers import (
     listar_contactos,
     listar_relevos_usuario,
     listar_sos_recibidas,
+    listar_notificaciones_pendientes,
+    marcar_notificacion_leida,
     obtener_balance_red,
     obtener_resumen_semana,
     router_auth,
@@ -26,6 +28,7 @@ from ..routers import (
     router_perfil,
     router_relevos,
     router_sos,
+    router_notificaciones,
     router_usuarios,
 )
 from ..services.common import (

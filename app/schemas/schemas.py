@@ -37,6 +37,7 @@ from ..views.sos.view import (
     AlertaSOSEstadoIn,
     AlertaSOSOut,
 )
+from ..views.notificaciones.view import NotificacionOut
 
 __all__ = [
     "UsuarioIn",
@@ -62,4 +63,5 @@ __all__ = [
     "AlertaSOSIn",
     "AlertaSOSEstadoIn",
     "AlertaSOSOut",
+    "NotificacionOut",
 ]

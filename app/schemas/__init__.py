@@ -24,6 +24,7 @@ from .schemas import (
     TokenOut,
     UsuarioIn,
     UsuarioOut,
+    NotificacionOut,
 )
 
 __all__ = [
@@ -50,4 +51,5 @@ __all__ = [
     "TokenOut",
     "UsuarioIn",
     "UsuarioOut",
+    "NotificacionOut",
 ]

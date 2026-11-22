@@ -66,6 +66,14 @@ La pantalla de perfil guarda cambios propios mediante
 `PATCH /api/v1/perfil/me`, protegido por bearer; no acepta un ID de usuario.
 El texto libre del perfil se guarda en `ocupacion`; `tipo` se mantiene como
 clasificación interna `estudiante` o `red`.
+La eliminación permanente de la cuenta autenticada se realiza con
+`DELETE /api/v1/perfil/me` (sin ID ni cuerpo). Elimina sus datos, contactos
+vinculados y solicitudes de relevo en las que figure como solicitante o cuidador.
+Si tenía un relevo aceptado, la otra parte recibe una notificación persistente
+que explica cuál cuenta se eliminó y que el relevo ya no está disponible:
+`GET /api/v1/notificaciones` lista las pendientes y
+`PATCH /api/v1/notificaciones/{id}/leida` la marca como leída. Ambos endpoints
+requieren bearer y solo permiten acceder a las notificaciones propias.
 
 Para añadir contactos, el código nuevo se muestra como `RC-` más seis dígitos
 hexadecimales (ejemplo `RC-D35C82`). `POST /api/v1/contactos/usuarios/{id}/por-codigo`

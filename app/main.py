@@ -19,6 +19,7 @@ from .routers import (
     router_contactos,
     router_relevos,
     router_sos,
+    router_notificaciones,
 )
 from . import models
 from . import schemas
@@ -61,6 +62,7 @@ app.include_router(router_checkins)
 app.include_router(router_contactos)
 app.include_router(router_relevos)
 app.include_router(router_sos)
+app.include_router(router_notificaciones)
 
 @app.exception_handler(RequestValidationError)
 async def manejar_validacion(

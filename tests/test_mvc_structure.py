@@ -3,6 +3,7 @@ from app.models.contactos.entity import ContactoConfianza
 from app.models.relevos.entity import SolicitudRelevo
 from app.models.sos.entity import AlertaSOS
 from app.models.usuarios.entity import Usuario
+from app.models.notificaciones.entity import Notificacion
 from app.models.checkins import model as checkin_model
 from app.routers.autenticacion.router import router_auth
 from app.routers.checkins.router import router_checkins
@@ -11,6 +12,7 @@ from app.routers.perfil.router import router_perfil
 from app.routers.relevos.router import router_relevos
 from app.routers.sos.router import router_sos
 from app.routers.usuarios.router import router_usuarios
+from app.routers.notificaciones.router import router_notificaciones
 from app.views.checkins.view import CheckInIn
 from app.views.contactos.view import ContactoConfianzaIn
 from app.views.relevos.view import SolicitudRelevoIn
@@ -24,6 +26,7 @@ def test_resource_models_and_views_are_separated():
     assert ContactoConfianza.__tablename__ == "contactos_confianza"
     assert SolicitudRelevo.__tablename__ == "solicitudes_relevo"
     assert AlertaSOS.__tablename__ == "alertas_sos"
+    assert Notificacion.__tablename__ == "notificaciones"
 
     for view in (
         UsuarioIn,
@@ -44,9 +47,10 @@ def test_each_http_router_has_its_own_resource_module():
         router_contactos,
         router_relevos,
         router_sos,
+        router_notificaciones,
     )
 
-    assert [len(router.routes) for router in routers] == [1, 2, 1, 3, 4, 5, 4]
+    assert [len(router.routes) for router in routers] == [1, 2, 2, 3, 4, 5, 4, 2]
 
 
 def test_checkin_router_delegates_data_operations_to_its_model():

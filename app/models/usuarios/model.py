@@ -2,9 +2,15 @@
 
 from datetime import date, datetime, timedelta, timezone
 from fastapi import HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ...repositories import SqlAlchemyRepository
+from ..checkins.entity import CheckIn
 from ..common import _commit_or_conflict
+from ..contactos.entity import ContactoConfianza
+from ..notificaciones.entity import Notificacion
+from ..relevos.entity import SolicitudRelevo
+from ..sos.entity import AlertaSOS
 from ...security import hash_password
 from ...security import ACCESS_TOKEN_SECONDS, create_access_token, verify_password
 from .entity import Usuario, generar_codigo_usuario, utc_now_naive
@@ -99,3 +105,90 @@ def actualizar_mi_perfil(datos: PerfilUpdate, current_user: Usuario, db: Session
     _commit_or_conflict(db, "No se pudo actualizar el perfil por un conflicto de datos")
     repository.refresh(current_user)
     return current_user
+
+
+def eliminar_mi_cuenta(current_user: Usuario, db: Session) -> None:
+    repository = SqlAlchemyRepository(db)
+    usuario_id = current_user.id
+    cuenta = repository.query(Usuario).filter(Usuario.id == usuario_id)
+    if (
+        cuenta.filter(Usuario.token_version == current_user.token_version)
+        .with_for_update()
+        .first()
+        is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticación requerida o token inválido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        relevos_aceptados_como_cuidador = (
+            repository.query(SolicitudRelevo)
+            .filter(
+                SolicitudRelevo.cuidador_id == usuario_id,
+                SolicitudRelevo.solicitante_id != usuario_id,
+                SolicitudRelevo.estado == "aceptada",
+            )
+            .with_for_update()
+            .all()
+        )
+        for relevo in relevos_aceptados_como_cuidador:
+            repository.add(
+                Notificacion(
+                    usuario_id=relevo.solicitante_id,
+                    mensaje=(
+                        "La persona que iba a cubrir tu relevo eliminó su "
+                        "cuenta. El relevo ya no está disponible."
+                    ),
+                )
+            )
+
+        relevos_aceptados_como_solicitante = (
+            repository.query(SolicitudRelevo)
+            .filter(
+                SolicitudRelevo.solicitante_id == usuario_id,
+                SolicitudRelevo.cuidador_id.is_not(None),
+                SolicitudRelevo.cuidador_id != usuario_id,
+                SolicitudRelevo.estado == "aceptada",
+            )
+            .with_for_update()
+            .all()
+        )
+        for relevo in relevos_aceptados_como_solicitante:
+            repository.add(
+                Notificacion(
+                    usuario_id=relevo.cuidador_id,
+                    mensaje=(
+                        "La persona que solicitó el relevo eliminó su cuenta. "
+                        "El relevo que habías aceptado ya no está disponible."
+                    ),
+                )
+            )
+
+        repository.query(CheckIn).filter(CheckIn.usuario_id == usuario_id).delete(
+            synchronize_session=False
+        )
+        repository.query(AlertaSOS).filter(
+            AlertaSOS.usuario_id == usuario_id
+        ).delete(synchronize_session=False)
+        repository.query(ContactoConfianza).filter(
+            (ContactoConfianza.usuario_id == usuario_id)
+            | (ContactoConfianza.contacto_usuario_id == usuario_id)
+        ).delete(synchronize_session=False)
+        repository.query(SolicitudRelevo).filter(
+            (SolicitudRelevo.solicitante_id == usuario_id)
+            | (SolicitudRelevo.cuidador_id == usuario_id)
+        ).delete(synchronize_session=False)
+        repository.query(Notificacion).filter(
+            Notificacion.usuario_id == usuario_id
+        ).delete(synchronize_session=False)
+        cuenta.delete(synchronize_session=False)
+        repository.commit()
+    except IntegrityError as exc:
+        repository.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se pudo eliminar la cuenta por un conflicto de datos",
+        ) from exc

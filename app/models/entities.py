@@ -10,6 +10,8 @@ from .relevos.entity import SolicitudRelevo
 
 from .sos.entity import AlertaSOS
 
+from .notificaciones.entity import Notificacion
+
 __all__ = [
     "Usuario",
     "generar_codigo_usuario",
@@ -18,4 +20,5 @@ __all__ = [
     "ContactoConfianza",
     "SolicitudRelevo",
     "AlertaSOS",
+    "Notificacion",
 ]

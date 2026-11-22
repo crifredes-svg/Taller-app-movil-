@@ -24,6 +24,7 @@ from app.api.routes import (
     router_contactos,
     router_relevos,
     router_sos,
+    router_notificaciones,
 )
 from app.schemas import (
     AlertaSOSEstadoIn,
@@ -55,6 +56,7 @@ def test_solamente_registro_y_login_son_publicos():
         router_contactos,
         router_relevos,
         router_sos,
+        router_notificaciones,
     )
     public_endpoints = {"crear_usuario", "iniciar_sesion"}
     for router in routers:
@@ -528,6 +530,178 @@ def test_token_de_usuario_eliminado_devuelve_401(api_client):
     protected = api_client.get(f"/api/v1/checkins/usuarios/{user_id}", headers=headers)
     assert protected.status_code == 401
     assert api_client.post("/api/v1/auth/logout", headers=headers).status_code == 401
+
+
+def test_borrado_cuenta_notifica_relevo_y_limpia_solo_datos_relacionados(api_client):
+    from datetime import date
+
+    from app.models import (
+        AlertaSOS,
+        CheckIn,
+        ContactoConfianza,
+        Notificacion,
+        SolicitudRelevo,
+        Usuario,
+    )
+
+    solicitante = _register_test_user(api_client, "solicitante@example.com").json()["id"]
+    cuidador = _register_test_user(api_client, "cuidador@example.com").json()["id"]
+    otro = _register_test_user(api_client, "otro@example.com").json()["id"]
+    token_cuidador = _login_test_user(api_client, "cuidador@example.com").json()["access_token"]
+    token_solicitante = _login_test_user(api_client, "solicitante@example.com").json()["access_token"]
+    token_otro = _login_test_user(api_client, "otro@example.com").json()["access_token"]
+
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        db.add_all(
+            [
+                CheckIn(usuario_id=solicitante, nivel="bien"),
+                CheckIn(usuario_id=cuidador, nivel="bien"),
+                CheckIn(usuario_id=otro, nivel="bien"),
+                AlertaSOS(usuario_id=solicitante, mensaje="Prueba"),
+                ContactoConfianza(
+                    usuario_id=solicitante,
+                    contacto_usuario_id=cuidador,
+                    nombre="Cuidador",
+                    relacion="Amigo",
+                    apoyos="",
+                    disponibilidad="",
+                ),
+                ContactoConfianza(
+                    usuario_id=otro,
+                    contacto_usuario_id=None,
+                    nombre="Contacto ajeno",
+                    relacion="Amigo",
+                    apoyos="",
+                    disponibilidad="",
+                ),
+                SolicitudRelevo(
+                    titulo="Relevo aceptado",
+                    tipo="casa",
+                    descripcion="Apoyo",
+                    fecha=date.today(),
+                    hora_inicio="10:00",
+                    hora_fin="11:00",
+                    estado="aceptada",
+                    solicitante_id=solicitante,
+                    cuidador_id=cuidador,
+                ),
+                SolicitudRelevo(
+                    titulo="Solicitud ajena",
+                    tipo="casa",
+                    descripcion="Apoyo",
+                    fecha=date.today(),
+                    hora_inicio="12:00",
+                    hora_fin="13:00",
+                    estado="pendiente",
+                    solicitante_id=otro,
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        gen.close()
+
+    sin_token = api_client.get("/api/v1/notificaciones")
+    assert sin_token.status_code == 401
+    headers_cuidador = {"Authorization": f"Bearer {token_cuidador}"}
+    borrado = api_client.delete("/api/v1/perfil/me", headers=headers_cuidador)
+    assert borrado.status_code == 204
+
+    headers_solicitante = {"Authorization": f"Bearer {token_solicitante}"}
+    pendientes = api_client.get("/api/v1/notificaciones", headers=headers_solicitante)
+    assert pendientes.status_code == 200
+    assert pendientes.json()[0]["mensaje"] == (
+        "La persona que iba a cubrir tu relevo eliminó su cuenta. "
+        "El relevo ya no está disponible."
+    )
+    notificacion_id = pendientes.json()[0]["id"]
+
+    headers_otro = {"Authorization": f"Bearer {token_otro}"}
+    assert api_client.patch(
+        f"/api/v1/notificaciones/{notificacion_id}/leida",
+        headers=headers_otro,
+    ).status_code == 404
+    marcada = api_client.patch(
+        f"/api/v1/notificaciones/{notificacion_id}/leida",
+        headers=headers_solicitante,
+    )
+    assert marcada.status_code == 200
+    assert marcada.json()["leida"] is True
+    assert api_client.get("/api/v1/notificaciones", headers=headers_solicitante).json() == []
+
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        assert db.query(Usuario).count() == 2
+        assert db.query(CheckIn).filter(CheckIn.usuario_id == cuidador).count() == 0
+        assert db.query(CheckIn).filter(CheckIn.usuario_id == solicitante).count() == 1
+        assert db.query(CheckIn).filter(CheckIn.usuario_id == otro).count() == 1
+        assert db.query(AlertaSOS).filter(AlertaSOS.usuario_id == solicitante).count() == 1
+        assert db.query(ContactoConfianza).count() == 1
+        assert db.query(SolicitudRelevo).count() == 1
+        assert db.query(Notificacion).filter(Notificacion.usuario_id == solicitante).one().leida
+    finally:
+        gen.close()
+
+
+def test_borrado_solicitante_avisa_a_quien_habia_aceptado(api_client):
+    from datetime import date
+
+    from app.models import SolicitudRelevo, Usuario
+
+    solicitante = _register_test_user(api_client, "solicitante2@example.com").json()["id"]
+    cuidador = _register_test_user(api_client, "cuidador2@example.com").json()["id"]
+    token_solicitante = _login_test_user(
+        api_client,
+        "solicitante2@example.com",
+    ).json()["access_token"]
+    token_cuidador = _login_test_user(
+        api_client,
+        "cuidador2@example.com",
+    ).json()["access_token"]
+
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        db.add(
+            SolicitudRelevo(
+                titulo="Relevo aceptado",
+                tipo="casa",
+                descripcion="Apoyo",
+                fecha=date.today(),
+                hora_inicio="10:00",
+                hora_fin="11:00",
+                estado="aceptada",
+                solicitante_id=solicitante,
+                cuidador_id=cuidador,
+            )
+        )
+        db.commit()
+    finally:
+        gen.close()
+
+    respuesta = api_client.delete(
+        "/api/v1/perfil/me",
+        headers={"Authorization": f"Bearer {token_solicitante}"},
+    )
+    assert respuesta.status_code == 204
+    assert api_client.get(
+        "/api/v1/notificaciones",
+        headers={"Authorization": f"Bearer {token_cuidador}"},
+    ).json()[0]["mensaje"] == (
+        "La persona que solicitó el relevo eliminó su cuenta. "
+        "El relevo que habías aceptado ya no está disponible."
+    )
+
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        assert db.query(Usuario).filter(Usuario.id == solicitante).one_or_none() is None
+        assert db.query(SolicitudRelevo).count() == 0
+    finally:
+        gen.close()
 
 
 def test_token_sin_claim_ver_se_trata_como_version_cero(api_client):

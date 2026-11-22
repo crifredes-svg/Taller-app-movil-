@@ -22,6 +22,11 @@ from .relevos.router import (
     obtener_resumen_semana,
     router_relevos,
 )
+from .notificaciones.router import (
+    listar_notificaciones_pendientes,
+    marcar_notificacion_leida,
+    router_notificaciones,
+)
 from .sos.router import (
     activar_sos,
     actualizar_estado_sos,
@@ -49,6 +54,8 @@ __all__ = [
     "listar_contactos",
     "listar_relevos_usuario",
     "listar_sos_recibidas",
+    "listar_notificaciones_pendientes",
+    "marcar_notificacion_leida",
     "obtener_balance_red",
     "obtener_resumen_semana",
     "router_auth",
@@ -57,5 +64,6 @@ __all__ = [
     "router_perfil",
     "router_relevos",
     "router_sos",
+    "router_notificaciones",
     "router_usuarios",
 ]
