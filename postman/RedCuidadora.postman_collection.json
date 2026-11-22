@@ -1,19 +1,23 @@
 {
   "info": {
     "name": "RedCuidadora API (privada para pruebas Postman)",
-    "description": "Colección para probar registro, login y operaciones protegidas. Configura base_url, correo, password, helper_email y helper_password como variables de colección. Usa solo datos ficticios y una base de pruebas. No contiene credenciales reales ni requiere Swagger/OpenAPI.",
+    "description": "Colección para probar registro, login y operaciones protegidas. Configura base_url, correo, password, helper_email y helper_password como variables de colección. El registro envía un código de 6 dígitos al correo: tras ejecutar cada registro, copia el código recibido en codigo_verificacion o helper_codigo_verificacion y ejecuta la verificación, por lo que los correos deben existir. Usa una base de pruebas. No contiene credenciales reales ni requiere Swagger/OpenAPI.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "base_url", "value": "http://localhost:9000" },
     { "key": "correo", "value": "" },
     { "key": "password", "value": "" },
+    { "key": "registro_id", "value": "" },
+    { "key": "codigo_verificacion", "value": "" },
     { "key": "access_token", "value": "" },
     { "key": "revoked_token", "value": "" },
     { "key": "usuario_id", "value": "" },
     { "key": "contact_code", "value": "" },
     { "key": "helper_email", "value": "" },
     { "key": "helper_password", "value": "" },
+    { "key": "helper_registro_id", "value": "" },
+    { "key": "helper_codigo_verificacion", "value": "" },
     { "key": "helper_user_id", "value": "" },
     { "key": "helper_access_token", "value": "" },
     { "key": "relevo_id", "value": "" },
@@ -60,6 +64,24 @@
       "event": [{
         "listen": "test",
         "script": { "type": "text/javascript", "exec": [
+          "pm.test('Código de verificación enviado', function () { pm.response.to.have.status(202); });",
+          "const body = pm.response.json();",
+          "pm.expect(body.expira_en_minutos).to.eql(35);",
+          "pm.collectionVariables.set('registro_id', body.registro_id);"
+        ]}
+      }]
+    },
+    {
+      "name": "02b - Verificar código del correo (pega el código en codigo_verificacion)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"registro_id\": \"{{registro_id}}\",\n  \"codigo\": \"{{codigo_verificacion}}\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/usuarios/verificar"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
           "pm.test('Usuario creado', function () { pm.response.to.have.status(201); });",
           "const body = pm.response.json();",
           "pm.expect(body.detail).to.eql('Cuenta creada correctamente');",
@@ -97,6 +119,22 @@
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Contacto Demo\",\n  \"correo\": \"{{helper_email}}\",\n  \"password\": \"{{helper_password}}\",\n  \"tipo\": \"red\"\n}", "options": { "raw": { "language": "json" } } },
         "url": "{{base_url}}/api/v1/usuarios"
+      },
+      "event": [{
+        "listen": "test",
+        "script": { "type": "text/javascript", "exec": [
+          "pm.test('Código del segundo usuario enviado', function () { pm.response.to.have.status(202); });",
+          "pm.collectionVariables.set('helper_registro_id', pm.response.json().registro_id);"
+        ]}
+      }]
+    },
+    {
+      "name": "04b - Verificar código del segundo usuario (pega el código en helper_codigo_verificacion)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"registro_id\": \"{{helper_registro_id}}\",\n  \"codigo\": \"{{helper_codigo_verificacion}}\"\n}", "options": { "raw": { "language": "json" } } },
+        "url": "{{base_url}}/api/v1/usuarios/verificar"
       },
       "event": [{
         "listen": "test",

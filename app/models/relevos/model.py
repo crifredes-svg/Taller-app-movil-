@@ -9,6 +9,7 @@ from ...domain.state_transitions import TRANSICIONES_RELEVO
 from ..common import _duracion_horas
 from .entity import SolicitudRelevo
 from ..contactos.entity import ContactoConfianza
+from ..notificaciones.entity import Notificacion
 from ..usuarios.entity import Usuario
 from ...views.relevos.view import SolicitudRelevoIn, SolicitudRelevoEstadoIn
 
@@ -196,3 +197,64 @@ def actualizar_relevo(relevo_id: int, datos: SolicitudRelevoEstadoIn, current_us
     repository.refresh(relevo)
 
     return relevo
+
+
+def cancelar_relevo(relevo_id: int, current_user: Usuario, db: Session):
+    repository = SqlAlchemyRepository(db)
+    relevo = repository.get(
+        SolicitudRelevo,
+        relevo_id,
+        with_for_update=True,
+    )
+    if relevo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Solicitud de relevo no encontrada",
+        )
+
+    if current_user.id == relevo.solicitante_id:
+        if relevo.estado == "completada":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No se puede cancelar un relevo completado",
+            )
+        if relevo.estado == "aceptada" and relevo.cuidador_id is not None:
+            repository.add(
+                Notificacion(
+                    usuario_id=relevo.cuidador_id,
+                    mensaje=(
+                        "La persona que solicitó el relevo canceló la "
+                        "solicitud. Ya no necesitas cubrirla."
+                    ),
+                )
+            )
+        repository.delete(relevo)
+        _commit_or_conflict(db, "No se pudo cancelar la solicitud de relevo")
+        return {
+            "resultado": "eliminada",
+            "detail": "La solicitud de relevo fue retirada",
+        }
+
+    if current_user.id == relevo.cuidador_id and relevo.estado == "aceptada":
+        repository.add(
+            Notificacion(
+                usuario_id=relevo.solicitante_id,
+                mensaje=(
+                    "La persona que había aceptado cubrir tu relevo canceló. "
+                    "La solicitud volvió a estar pendiente para que otra "
+                    "persona pueda aceptarla."
+                ),
+            )
+        )
+        relevo.estado = "pendiente"
+        relevo.cuidador_id = None
+        _commit_or_conflict(db, "No se pudo cancelar la asignación del relevo")
+        return {
+            "resultado": "pendiente",
+            "detail": "La solicitud volvió a estar pendiente",
+        }
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Solicitud de relevo no encontrada",
+    )

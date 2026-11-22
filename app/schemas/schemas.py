@@ -4,6 +4,9 @@ from ..views.usuarios.view import (
     UsuarioIn,
     UsuarioOut,
     RegistroOut,
+    RegistroPendienteOut,
+    VerificacionRegistroIn,
+    ReenvioCodigoIn,
     LoginIn,
     TokenOut,
     LogoutOut,
@@ -26,6 +29,7 @@ from ..views.contactos.view import (
 )
 
 from ..views.relevos.view import (
+    CancelacionRelevoOut,
     SolicitudRelevoIn,
     SolicitudRelevoEstadoIn,
     SolicitudRelevoOut,
@@ -43,6 +47,9 @@ __all__ = [
     "UsuarioIn",
     "UsuarioOut",
     "RegistroOut",
+    "RegistroPendienteOut",
+    "VerificacionRegistroIn",
+    "ReenvioCodigoIn",
     "LoginIn",
     "TokenOut",
     "LogoutOut",
@@ -57,6 +64,7 @@ __all__ = [
     "BalanceContactoOut",
     "BalanceRedOut",
     "SolicitudRelevoIn",
+    "CancelacionRelevoOut",
     "SolicitudRelevoEstadoIn",
     "SolicitudRelevoOut",
     "ResumenSemanaOut",

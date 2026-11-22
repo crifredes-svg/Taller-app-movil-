@@ -17,6 +17,7 @@ from .contactos.router import (
 from .perfil.router import actualizar_mi_perfil, router_perfil
 from .relevos.router import (
     actualizar_relevo,
+    cancelar_relevo,
     crear_solicitud_relevo,
     listar_relevos_usuario,
     obtener_resumen_semana,
@@ -34,12 +35,18 @@ from .sos.router import (
     listar_sos_recibidas,
     router_sos,
 )
-from .usuarios.router import crear_usuario, router_usuarios
+from .usuarios.router import (
+    crear_usuario,
+    reenviar_codigo_registro,
+    router_usuarios,
+    verificar_registro,
+)
 
 __all__ = [
     "actualizar_estado_sos",
     "actualizar_mi_perfil",
     "actualizar_relevo",
+    "cancelar_relevo",
     "activar_sos",
     "cerrar_sesion",
     "consultar_tendencia_carga",
@@ -58,6 +65,7 @@ __all__ = [
     "marcar_notificacion_leida",
     "obtener_balance_red",
     "obtener_resumen_semana",
+    "reenviar_codigo_registro",
     "router_auth",
     "router_checkins",
     "router_contactos",
@@ -66,4 +74,5 @@ __all__ = [
     "router_sos",
     "router_notificaciones",
     "router_usuarios",
+    "verificar_registro",
 ]

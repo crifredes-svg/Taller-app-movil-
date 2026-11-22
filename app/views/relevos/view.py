@@ -1,7 +1,7 @@
 """Pydantic view models for relevos API requests and responses."""
 
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -54,6 +54,10 @@ class SolicitudRelevoOut(BaseModel):
     cuidador_id: Optional[int]
 
     model_config = {"from_attributes": True}
+
+class CancelacionRelevoOut(BaseModel):
+    resultado: Literal["eliminada", "pendiente"]
+    detail: str
 
 class ResumenSemanaOut(BaseModel):
     desde: date

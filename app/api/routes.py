@@ -4,6 +4,7 @@ from ..routers import (
     actualizar_estado_sos,
     actualizar_mi_perfil,
     actualizar_relevo,
+    cancelar_relevo,
     activar_sos,
     cerrar_sesion,
     consultar_tendencia_carga,
@@ -22,6 +23,7 @@ from ..routers import (
     marcar_notificacion_leida,
     obtener_balance_red,
     obtener_resumen_semana,
+    reenviar_codigo_registro,
     router_auth,
     router_checkins,
     router_contactos,
@@ -30,6 +32,7 @@ from ..routers import (
     router_sos,
     router_notificaciones,
     router_usuarios,
+    verificar_registro,
 )
 from ..services.common import (
     _commit_or_conflict,

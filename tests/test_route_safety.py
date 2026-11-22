@@ -58,7 +58,12 @@ def test_solamente_registro_y_login_son_publicos():
         router_sos,
         router_notificaciones,
     )
-    public_endpoints = {"crear_usuario", "iniciar_sesion"}
+    public_endpoints = {
+        "crear_usuario",
+        "verificar_registro",
+        "reenviar_codigo_registro",
+        "iniciar_sesion",
+    }
     for router in routers:
         for route in router.routes:
             dependency_calls = {
@@ -229,17 +234,39 @@ def api_client():
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    with patch("app.main._initialize_database"):
+    codigos_enviados = {}
+
+    def capturar_codigo(correo, codigo, _minutos):
+        codigos_enviados[correo] = codigo
+
+    with patch("app.main._initialize_database"), patch(
+        "app.models.usuarios.model.enviar_codigo_verificacion",
+        side_effect=capturar_codigo,
+    ):
         with TestClient(app) as client:
+            client.codigos_enviados = codigos_enviados
             yield client
     app.dependency_overrides.clear()
     test_engine.dispose()
 
 
-def _register_test_user(client, email="persona@example.com"):
+def _registrar_y_verificar(client, payload):
+    solicitud = client.post("/api/v1/usuarios", json=payload)
+    if solicitud.status_code != 202:
+        return solicitud
     return client.post(
-        "/api/v1/usuarios",
+        "/api/v1/usuarios/verificar",
         json={
+            "registro_id": solicitud.json()["registro_id"],
+            "codigo": client.codigos_enviados[payload["correo"]],
+        },
+    )
+
+
+def _register_test_user(client, email="persona@example.com"):
+    return _registrar_y_verificar(
+        client,
+        {
             "nombre": "Persona Demo",
             "correo": email,
             "password": "una-clave-segura-de-prueba",
@@ -331,6 +358,139 @@ def test_disponibles_y_completar_sin_reasignar_cuidador(api_client):
     assert completed.json()["cuidador_id"] == helper["id"]
 
 
+def test_solicitante_cancela_relevo_aceptado_y_notifica_al_cuidador(api_client):
+    from datetime import date
+
+    solicitante = _register_test_user(api_client, "cancela-owner@example.com").json()
+    cuidador = _register_test_user(api_client, "cancela-helper@example.com").json()
+    otro = _register_test_user(api_client, "cancela-otro@example.com").json()
+    headers_solicitante = {
+        "Authorization": f"Bearer {_login_test_user(api_client, 'cancela-owner@example.com').json()['access_token']}"
+    }
+    headers_cuidador = {
+        "Authorization": f"Bearer {_login_test_user(api_client, 'cancela-helper@example.com').json()['access_token']}"
+    }
+    headers_otro = {
+        "Authorization": f"Bearer {_login_test_user(api_client, 'cancela-otro@example.com').json()['access_token']}"
+    }
+
+    vinculo = api_client.post(
+        f"/api/v1/contactos/usuarios/{solicitante['id']}/por-codigo",
+        headers=headers_solicitante,
+        json={"codigo_unico": cuidador["codigo_unico"], "relacion": "Amigo"},
+    )
+    assert vinculo.status_code == 201
+    creado = api_client.post(
+        "/api/v1/relevos",
+        headers=headers_solicitante,
+        json={
+            "titulo": "Apoyo en casa",
+            "tipo": "casa",
+            "descripcion": "Necesito ayuda en mi casa",
+            "fecha": date.today().isoformat(),
+            "hora_inicio": "10:00",
+            "hora_fin": "11:00",
+            "solicitante_id": solicitante["id"],
+        },
+    )
+    relevo_id = creado.json()["id"]
+    aceptado = api_client.patch(
+        f"/api/v1/relevos/{relevo_id}",
+        headers=headers_cuidador,
+        json={"estado": "aceptada", "cuidador_id": cuidador["id"]},
+    )
+    assert aceptado.status_code == 200
+
+    assert api_client.post(f"/api/v1/relevos/{relevo_id}/cancelar").status_code == 401
+    ajeno = api_client.post(
+        f"/api/v1/relevos/{relevo_id}/cancelar",
+        headers=headers_otro,
+    )
+    assert ajeno.status_code == 404
+    cancelado = api_client.post(
+        f"/api/v1/relevos/{relevo_id}/cancelar",
+        headers=headers_solicitante,
+    )
+    assert cancelado.status_code == 200
+    assert cancelado.json()["resultado"] == "eliminada"
+    assert api_client.get(
+        f"/api/v1/relevos/usuarios/{solicitante['id']}",
+        headers=headers_solicitante,
+    ).json() == []
+    notificacion = api_client.get(
+        "/api/v1/notificaciones",
+        headers=headers_cuidador,
+    ).json()
+    assert [item["mensaje"] for item in notificacion] == [
+        "La persona que solicitó el relevo canceló la solicitud. "
+        "Ya no necesitas cubrirla."
+    ]
+
+
+def test_cuidador_cancela_aceptacion_reabre_relevo_y_notifica(api_client):
+    from datetime import date
+
+    solicitante = _register_test_user(api_client, "reopen-owner@example.com").json()
+    cuidador = _register_test_user(api_client, "reopen-helper@example.com").json()
+    headers_solicitante = {
+        "Authorization": f"Bearer {_login_test_user(api_client, 'reopen-owner@example.com').json()['access_token']}"
+    }
+    headers_cuidador = {
+        "Authorization": f"Bearer {_login_test_user(api_client, 'reopen-helper@example.com').json()['access_token']}"
+    }
+
+    vinculo = api_client.post(
+        f"/api/v1/contactos/usuarios/{solicitante['id']}/por-codigo",
+        headers=headers_solicitante,
+        json={"codigo_unico": cuidador["codigo_unico"], "relacion": "Amigo"},
+    )
+    assert vinculo.status_code == 201
+    creado = api_client.post(
+        "/api/v1/relevos",
+        headers=headers_solicitante,
+        json={
+            "titulo": "Apoyo en casa",
+            "tipo": "casa",
+            "descripcion": "Necesito ayuda en mi casa",
+            "fecha": date.today().isoformat(),
+            "hora_inicio": "10:00",
+            "hora_fin": "11:00",
+            "solicitante_id": solicitante["id"],
+        },
+    )
+    relevo_id = creado.json()["id"]
+    aceptado = api_client.patch(
+        f"/api/v1/relevos/{relevo_id}",
+        headers=headers_cuidador,
+        json={"estado": "aceptada", "cuidador_id": cuidador["id"]},
+    )
+    assert aceptado.status_code == 200
+
+    cancelado = api_client.post(
+        f"/api/v1/relevos/{relevo_id}/cancelar",
+        headers=headers_cuidador,
+    )
+    assert cancelado.status_code == 200
+    assert cancelado.json()["resultado"] == "pendiente"
+    actualizado = api_client.get(
+        f"/api/v1/relevos/usuarios/{solicitante['id']}",
+        headers=headers_solicitante,
+    ).json()
+    assert len(actualizado) == 1
+    assert actualizado[0]["id"] == relevo_id
+    assert actualizado[0]["estado"] == "pendiente"
+    assert actualizado[0]["cuidador_id"] is None
+    notificacion = api_client.get(
+        "/api/v1/notificaciones",
+        headers=headers_solicitante,
+    ).json()
+    assert [item["mensaje"] for item in notificacion] == [
+        "La persona que había aceptado cubrir tu relevo canceló. "
+        "La solicitud volvió a estar pendiente para que otra "
+        "persona pueda aceptarla."
+    ]
+
+
 def test_tendencia_no_pierde_dias_con_mas_de_cien_checkins(api_client):
     from datetime import datetime, timedelta, timezone
     from app.models import CheckIn
@@ -406,9 +566,9 @@ def test_flujo_registro_duplicado_login_y_acceso_protegido(api_client):
 
 
 def test_registro_completo_con_campos_opcionales(api_client):
-    response = api_client.post(
-        "/api/v1/usuarios",
-        json={
+    response = _registrar_y_verificar(
+        api_client,
+        {
             "nombre": "María González",
             "correo": "maria.ejemplo@correo.cl",
             "password": "EjemploSeguro123",
@@ -437,9 +597,23 @@ def test_registro_invalido_devuelve_422(api_client):
         {"password": "corta"},
         {"genero": "otro"},
         {"correo": "no-es-correo"},
+        {"correo": "maria@correo.zzzz"},
     ):
         response = api_client.post("/api/v1/usuarios", json={**base, **cambio})
         assert response.status_code == 422, cambio
+
+
+@pytest.mark.parametrize("extension", ["com", "cl", "org", "es", "xyz"])
+def test_registro_acepta_extensiones_de_correo_permitidas(api_client, extension):
+    response = _registrar_y_verificar(
+        api_client,
+        {
+            "nombre": "María González",
+            "correo": f"maria@correo.{extension}",
+            "password": "EjemploSeguro123",
+        },
+    )
+    assert response.status_code == 201
 
 
 def test_registro_con_genero_masculino_y_sin_genero(api_client):
@@ -447,20 +621,240 @@ def test_registro_con_genero_masculino_y_sin_genero(api_client):
         "nombre": "Pedro Soto",
         "password": "EjemploSeguro123",
     }
-    masculino = api_client.post(
-        "/api/v1/usuarios",
-        json={**base, "correo": "pedro@correo.cl", "genero": "masculino"},
+    masculino = _registrar_y_verificar(
+        api_client,
+        {**base, "correo": "pedro@correo.cl", "genero": "masculino"},
     )
     assert masculino.status_code == 201
     assert masculino.json()["genero"] == "masculino"
 
-    sin_genero = api_client.post(
-        "/api/v1/usuarios",
-        json={**base, "correo": "sin.genero@correo.cl"},
+    sin_genero = _registrar_y_verificar(
+        api_client,
+        {**base, "correo": "sin.genero@correo.cl"},
     )
     assert sin_genero.status_code == 201
     assert sin_genero.json()["genero"] is None
     assert sin_genero.json()["persona_cuidada_nombre"] is None
+
+
+_REGISTRO_DEMO = {
+    "nombre": "Persona Demo",
+    "correo": "persona@example.com",
+    "password": "una-clave-segura-de-prueba",
+}
+
+
+def _verificar(client, registro_id, codigo):
+    return client.post(
+        "/api/v1/usuarios/verificar",
+        json={"registro_id": registro_id, "codigo": codigo},
+    )
+
+
+def _codigo_distinto(codigo):
+    return "000000" if codigo != "000000" else "111111"
+
+
+def _modificar_registro_pendiente(correo, **cambios):
+    from app.models import RegistroPendiente
+
+    gen = app.dependency_overrides[get_db]()
+    db = next(gen)
+    try:
+        db.query(RegistroPendiente).filter(
+            RegistroPendiente.correo == correo
+        ).update(cambios, synchronize_session=False)
+        db.commit()
+    finally:
+        gen.close()
+
+
+def _hace(segundos):
+    from datetime import datetime, timedelta, timezone
+
+    return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+        seconds=segundos
+    )
+
+
+def test_registro_no_crea_cuenta_hasta_verificar_codigo(api_client):
+    solicitud = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO)
+    assert solicitud.status_code == 202
+    body = solicitud.json()
+    assert body["correo"] == "persona@example.com"
+    assert body["expira_en_minutos"] == 35
+    assert body["reenviar_en_segundos"] == 60
+    assert _login_test_user(api_client).status_code == 401
+
+    codigo = api_client.codigos_enviados["persona@example.com"]
+    assert re.fullmatch(r"\d{6}", codigo)
+    assert _verificar(api_client, body["registro_id"], "12345").status_code == 422
+    fallido = _verificar(api_client, body["registro_id"], _codigo_distinto(codigo))
+    assert fallido.status_code == 400
+    assert fallido.json()["detail"] == "Código incorrecto. Te quedan 3 intentos"
+
+    verificado = _verificar(api_client, body["registro_id"], codigo)
+    assert verificado.status_code == 201
+    assert verificado.json()["correo"] == "persona@example.com"
+    assert _login_test_user(api_client).status_code == 200
+    assert _verificar(api_client, body["registro_id"], codigo).status_code == 404
+
+
+def test_cuatro_intentos_fallidos_invalidan_codigo_hasta_reenviarlo(api_client):
+    registro_id = api_client.post(
+        "/api/v1/usuarios", json=_REGISTRO_DEMO
+    ).json()["registro_id"]
+    codigo = api_client.codigos_enviados["persona@example.com"]
+
+    fallidos = [
+        _verificar(api_client, registro_id, _codigo_distinto(codigo)).status_code
+        for _ in range(4)
+    ]
+    assert fallidos == [400, 400, 400, 429]
+    assert _verificar(api_client, registro_id, codigo).status_code == 429
+
+    reenvio_temprano = api_client.post(
+        "/api/v1/usuarios/reenviar-codigo",
+        json={"registro_id": registro_id},
+    )
+    assert reenvio_temprano.status_code == 429
+    assert "Retry-After" in reenvio_temprano.headers
+
+    _modificar_registro_pendiente("persona@example.com", enviado_en=_hace(61))
+    reenvio = api_client.post(
+        "/api/v1/usuarios/reenviar-codigo",
+        json={"registro_id": registro_id},
+    )
+    assert reenvio.status_code == 202
+    nuevo_codigo = api_client.codigos_enviados["persona@example.com"]
+    assert _verificar(api_client, registro_id, nuevo_codigo).status_code == 201
+
+
+def test_codigo_vencido_no_crea_cuenta(api_client):
+    registro_id = api_client.post(
+        "/api/v1/usuarios", json=_REGISTRO_DEMO
+    ).json()["registro_id"]
+    codigo = api_client.codigos_enviados["persona@example.com"]
+    _modificar_registro_pendiente("persona@example.com", expira_en=_hace(1))
+
+    vencido = _verificar(api_client, registro_id, codigo)
+    assert vencido.status_code == 410
+    assert _login_test_user(api_client).status_code == 401
+
+
+def test_codigo_expira_exactamente_a_los_35_minutos(api_client):
+    from datetime import datetime, timedelta
+    from unittest.mock import patch
+
+    inicio = datetime(2026, 11, 22, 12)
+    with patch("app.models.usuarios.model.utc_now_naive", return_value=inicio):
+        solicitud = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO)
+    codigo = api_client.codigos_enviados["persona@example.com"]
+    with patch(
+        "app.models.usuarios.model.utc_now_naive",
+        return_value=inicio + timedelta(minutes=35),
+    ):
+        assert _verificar(api_client, solicitud.json()["registro_id"], codigo).status_code == 410
+
+
+def test_verificacion_rechaza_digitos_no_ascii_sin_consumir_intentos(api_client):
+    registro_id = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO).json()["registro_id"]
+    for _ in range(4):
+        assert _verificar(api_client, registro_id, "\uff11\uff12\uff13\uff14\uff15\uff16").status_code == 422
+    assert _verificar(api_client, registro_id, api_client.codigos_enviados["persona@example.com"]).status_code == 201
+
+
+def test_registro_envia_codigo_solo_al_destinatario_y_lo_verifica(api_client, monkeypatch):
+    from unittest.mock import patch
+    from app.correo import enviar_codigo_verificacion
+
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_USER", "remitente@example.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "clave-de-prueba")
+    monkeypatch.delenv("SMTP_FROM", raising=False)
+    with patch(
+        "app.models.usuarios.model.enviar_codigo_verificacion",
+        side_effect=enviar_codigo_verificacion,
+    ), patch("app.correo.enviador.smtplib.SMTP") as smtp_class:
+        solicitud = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO)
+    assert solicitud.status_code == 202
+    smtp = smtp_class.return_value.__enter__.return_value
+    smtp.send_message.assert_called_once()
+    mensaje = smtp.send_message.call_args.args[0]
+    assert mensaje.get_all("To") == ["persona@example.com"]
+    assert mensaje["Cc"] is None and mensaje["Bcc"] is None
+    codigo = re.search(r"\b([0-9]{6})\b", mensaje.get_content()).group(1)
+    assert "codigo" not in solicitud.json()
+    assert _login_test_user(api_client).status_code == 401
+    assert _verificar(api_client, solicitud.json()["registro_id"], codigo).status_code == 201
+    assert _login_test_user(api_client).status_code == 200
+
+
+def test_nuevo_registro_con_el_mismo_correo_invalida_el_anterior(api_client):
+    primero = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO)
+    assert primero.status_code == 202
+    assert api_client.post(
+        "/api/v1/usuarios", json=_REGISTRO_DEMO
+    ).status_code == 429
+
+    _modificar_registro_pendiente("persona@example.com", enviado_en=_hace(61))
+    segundo = api_client.post(
+        "/api/v1/usuarios",
+        json={**_REGISTRO_DEMO, "password": "otra-clave-segura-de-prueba"},
+    )
+    assert segundo.status_code == 202
+    codigo = api_client.codigos_enviados["persona@example.com"]
+
+    assert _verificar(
+        api_client, primero.json()["registro_id"], codigo
+    ).status_code == 404
+    assert _verificar(
+        api_client, segundo.json()["registro_id"], codigo
+    ).status_code == 201
+
+
+def test_registro_no_queda_pendiente_si_falla_el_envio_del_correo(api_client):
+    from unittest.mock import patch
+    from app.correo import CorreoNoEnviadoError
+
+    with patch(
+        "app.models.usuarios.model.enviar_codigo_verificacion",
+        side_effect=CorreoNoEnviadoError("SMTP caído"),
+    ):
+        fallido = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO)
+    assert fallido.status_code == 503
+
+    reintento = api_client.post("/api/v1/usuarios", json=_REGISTRO_DEMO)
+    assert reintento.status_code == 202
+
+
+def test_enviador_smtp_usa_starttls_y_envia_el_codigo(monkeypatch):
+    from unittest.mock import patch
+    from app.correo import CorreoNoEnviadoError, enviar_codigo_verificacion
+
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_USER", "remitente@example.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "clave-de-aplicacion")
+    monkeypatch.delenv("SMTP_FROM", raising=False)
+    with patch("app.correo.enviador.smtplib.SMTP") as smtp_class:
+        enviar_codigo_verificacion("destino@example.com", "123456", 35)
+
+    smtp = smtp_class.return_value.__enter__.return_value
+    smtp.starttls.assert_called_once()
+    smtp.login.assert_called_once_with(
+        "remitente@example.com",
+        "clave-de-aplicacion",
+    )
+    mensaje = smtp.send_message.call_args.args[0]
+    assert mensaje["To"] == "destino@example.com"
+    assert mensaje["From"] == "remitente@example.com"
+    assert "123456" in mensaje.get_content()
+
+    monkeypatch.delenv("SMTP_HOST")
+    with pytest.raises(CorreoNoEnviadoError):
+        enviar_codigo_verificacion("destino@example.com", "123456", 35)
 
 
 @pytest.mark.parametrize("edad", [-1, 131])

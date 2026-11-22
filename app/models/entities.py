@@ -1,6 +1,11 @@
 """ORM entities grouped by resource."""
 
-from .usuarios.entity import Usuario, generar_codigo_usuario, utc_now_naive
+from .usuarios.entity import (
+    RegistroPendiente,
+    Usuario,
+    generar_codigo_usuario,
+    utc_now_naive,
+)
 
 from .checkins.entity import CheckIn
 
@@ -13,6 +18,7 @@ from .sos.entity import AlertaSOS
 from .notificaciones.entity import Notificacion
 
 __all__ = [
+    "RegistroPendiente",
     "Usuario",
     "generar_codigo_usuario",
     "utc_now_naive",

@@ -50,7 +50,7 @@ def test_each_http_router_has_its_own_resource_module():
         router_notificaciones,
     )
 
-    assert [len(router.routes) for router in routers] == [1, 2, 2, 3, 4, 5, 4, 2]
+    assert [len(router.routes) for router in routers] == [3, 2, 2, 3, 4, 6, 4, 2]
 
 
 def test_checkin_router_delegates_data_operations_to_its_model():

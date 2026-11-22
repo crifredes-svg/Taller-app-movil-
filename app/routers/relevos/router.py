@@ -7,12 +7,14 @@ from ...database import get_db
 from ...models.usuarios.model import Usuario
 from ...security import get_current_user
 from ...models.relevos.model import actualizar_relevo as ejecutar_actualizar_relevo
+from ...models.relevos.model import cancelar_relevo as ejecutar_cancelar_relevo
 from ...models.relevos.model import crear_solicitud_relevo as ejecutar_crear_solicitud_relevo
 from ...models.relevos.model import listar_relevos_usuario as ejecutar_listar_relevos_usuario
 from ...models.relevos.model import listar_relevos_disponibles as ejecutar_listar_relevos_disponibles
 from ...models.relevos.model import obtener_resumen_semana as ejecutar_obtener_resumen_semana
 from ...views.relevos.view import (
     ResumenSemanaOut,
+    CancelacionRelevoOut,
     SolicitudRelevoEstadoIn,
     SolicitudRelevoIn,
     SolicitudRelevoOut,
@@ -72,3 +74,15 @@ def actualizar_relevo(
     db: Session = Depends(get_db),
 ):
     return ejecutar_actualizar_relevo(relevo_id, datos, current_user, db)
+
+
+@router_relevos.post(
+    "/{relevo_id}/cancelar",
+    response_model=CancelacionRelevoOut,
+)
+def cancelar_relevo(
+    relevo_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return ejecutar_cancelar_relevo(relevo_id, current_user, db)
