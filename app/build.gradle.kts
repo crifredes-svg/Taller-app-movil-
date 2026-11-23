@@ -15,11 +15,14 @@ val serverBaseUrl = localProperties.getProperty("server.base.url") ?: "https://a
 
 android {
     namespace = "com.redcuidadora.app"
+    // Keep the tested SDK; upgrading it is a separate compatibility change.
+    //noinspection GradleDependency
     compileSdk = 35
 
     defaultConfig {
         applicationId = "com.redcuidadora.app"
         minSdk = 24
+        //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -54,6 +57,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    // App and test configurations intentionally declare their own dependencies.
+    @Suppress("AvoidDuplicateDependencies")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -69,10 +74,13 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
+    @Suppress("AvoidDuplicateDependencies")
     testImplementation(libs.okhttp.mockwebserver)
+    @Suppress("AvoidDuplicateDependencies")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.espresso.core)
+    @Suppress("AvoidDuplicateDependencies")
     androidTestImplementation(libs.okhttp.mockwebserver)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

@@ -2,6 +2,7 @@ package com.redcuidadora.app.ui.screens
 
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import kotlin.time.Duration.Companion.seconds
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -103,7 +104,7 @@ fun VerificationScreen(
     LaunchedEffect(Unit) {
         while (isActive) {
             now = SystemClock.elapsedRealtime()
-            delay(1_000)
+            delay(1.seconds)
         }
     }
     BackHandler { if (!busy) onBack() }
@@ -120,7 +121,7 @@ fun VerificationScreen(
                     )
                     val user = response.body()
                     if (response.code() == 201 && user?.id != null &&
-                        !user.correo.isNullOrBlank()
+                        user.correo.isNotBlank()
                     ) {
                         onVerified(user)
                     } else if (response.isSuccessful) {

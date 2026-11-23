@@ -1,13 +1,24 @@
 [versions]
+# Keep tested versions; upgrades are a separate compatibility change.
+#noinspection AndroidGradlePluginVersion
 agp = "8.7.3"
+#noinspection GradleDependency,NewerVersionAvailable
 kotlin = "2.0.21"
+#noinspection GradleDependency
 coreKtx = "1.15.0"
+#noinspection GradleDependency
 lifecycleRuntimeKtx = "2.8.7"
+#noinspection GradleDependency
 activityCompose = "1.9.3"
+#noinspection GradleDependency
 composeBom = "2024.11.00"
+#noinspection GradleDependency
 navigationCompose = "2.8.4"
+#noinspection GradleDependency
 materialIconsExtended = "1.7.5"
+#noinspection GradleDependency,NewerVersionAvailable
 retrofit = "2.11.0"
+#noinspection GradleDependency,NewerVersionAvailable
 okhttp = "4.12.0"
 junit = "4.13.2"
 espresso = "3.7.0"

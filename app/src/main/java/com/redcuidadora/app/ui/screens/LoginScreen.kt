@@ -517,7 +517,7 @@ fun LoginScreen(
 
                             val pending = response.body()
                             if (response.code() == 202 && pending != null &&
-                                !pending.registroId.isNullOrBlank() && !pending.correo.isNullOrBlank() &&
+                                pending.registroId.isNotBlank() && pending.correo.isNotBlank() &&
                                 pending.expiraEnMinutos > 0 && pending.reenviarEnSegundos >= 0
                             ) {
                                 regPassword = ""

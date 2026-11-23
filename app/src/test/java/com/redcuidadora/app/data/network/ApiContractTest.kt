@@ -83,10 +83,10 @@ class ApiContractTest {
     }
 
     @Test
-    fun availableReliefsAndCompletionUseCorrectContracts() = runBlocking {
+    fun userReliefsAndCompletionUseCorrectContracts() = runBlocking {
         respond(200, "[]")
-        api.listarRelevosDisponibles(100).requireBody()
-        assertEquals("/api/v1/relevos/disponibles?offset=100", server.takeRequest().path)
+        api.listarRelevosUsuario(1, 100).requireBody()
+        assertEquals("/api/v1/relevos/usuarios/1?offset=100", server.takeRequest().path)
         respond(200, """{"id":3,"solicitante_id":1,"cuidador_id":2,"titulo":"Apoyo","tipo":"casa","descripcion":"Ayuda en casa","fecha":"2099-12-01","hora_inicio":"10:00","hora_fin":"11:00","estado":"completada"}""")
         api.actualizarRelevo(3, ActualizarEstadoRelevoDto("completada")).requireBody()
         val request = server.takeRequest()

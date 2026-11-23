@@ -1,6 +1,5 @@
 package com.redcuidadora.app.ui.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -161,7 +160,7 @@ fun AnadirContactoScreen(
             onClick = {
                 action.run("Se añadió el contacto a tu red de confianza") {
                     require(Regex("(?:RC-)?(?:[0-9A-F]{6}|[0-9A-F]{8})").matches(codigoContacto.trim().uppercase())) { "Ingresa un código válido de tu contacto." }
-                    require(relacionContigo.trim().length in 2..40) { "La relación debe tener entre 2 y 40 caracteres." }
+                    require((relacionContigo.trim().length) in 2..40) { "La relación debe tener entre 2 y 40 caracteres." }
                     val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
                     RetrofitClient.getApiService(context).crearContactoPorCodigo(
                         id, ContactoPorCodigoDto(codigoContacto.trim(), relacionContigo.trim(), apoyos = null, disponibilidad = null),

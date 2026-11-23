@@ -45,7 +45,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +65,6 @@ import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
 import com.redcuidadora.app.ui.theme.StatusRed
 import com.redcuidadora.app.ui.theme.TextPrimaryDark
 import com.redcuidadora.app.ui.theme.TextSecondaryDark
-import kotlinx.coroutines.launch
 
 @Composable
 fun PerfilScreen(
@@ -74,7 +72,6 @@ fun PerfilScreen(
     onLogoutConfirmed: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     val user = remember { TokenManager.getUser(context) }
     val action = rememberApiAction()
