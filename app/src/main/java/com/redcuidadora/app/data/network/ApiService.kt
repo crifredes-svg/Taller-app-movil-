@@ -31,6 +31,22 @@ data class LogoutOutDto(
     val detail: String? = "Sesión cerrada correctamente",
 )
 
+data class RegistroPendienteDto(
+    @SerializedName("registro_id") val registroId: String,
+    val correo: String,
+    @SerializedName("expira_en_minutos") val expiraEnMinutos: Int,
+    @SerializedName("reenviar_en_segundos") val reenviarEnSegundos: Int,
+) : java.io.Serializable
+
+data class VerificacionRegistroDto(
+    @SerializedName("registro_id") val registroId: String,
+    val codigo: String,
+)
+
+data class ReenvioCodigoDto(
+    @SerializedName("registro_id") val registroId: String,
+)
+
 fun UsuarioDto.profileUpdateBody(): RequestBody = JsonObject().apply {
     addProperty("nombre", nombre)
     tipo?.let { addProperty("tipo", it) }
@@ -152,7 +168,13 @@ interface ApiService {
 
     // ---------- Usuarios ----------
     @POST("api/v1/usuarios")
-    suspend fun crearUsuario(@Body usuario: UsuarioDto): Response<UsuarioDto>
+    suspend fun crearUsuario(@Body usuario: UsuarioDto): Response<RegistroPendienteDto>
+
+    @POST("api/v1/usuarios/verificar")
+    suspend fun verificarRegistro(@Body verificacion: VerificacionRegistroDto): Response<UsuarioDto>
+
+    @POST("api/v1/usuarios/reenviar-codigo")
+    suspend fun reenviarCodigo(@Body reenvio: ReenvioCodigoDto): Response<RegistroPendienteDto>
 
     // ---------- Mi carga / Check-in ----------
     @POST("api/v1/checkins/usuarios/{usuario_id}")
@@ -186,9 +208,6 @@ interface ApiService {
 
     @GET("api/v1/relevos/usuarios/{usuario_id}")
     suspend fun listarRelevosUsuario(@Path("usuario_id") usuarioId: Int, @Query("offset") offset: Int = 0): Response<List<SolicitudRelevoDto>>
-
-    @GET("api/v1/relevos/disponibles")
-    suspend fun listarRelevosDisponibles(@Query("offset") offset: Int = 0): Response<List<SolicitudRelevoDto>>
 
     @GET("api/v1/relevos/resumen/semana")
     suspend fun obtenerResumenSemana(): Response<ResumenSemanaDto>

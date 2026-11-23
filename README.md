@@ -5,6 +5,8 @@
 El cliente actual usa Kotlin, Jetpack Compose y Retrofit. La URL del backend se configura con `server.base.url` en `local.properties`; no guardar credenciales ni tokens en ese archivo ni en el repositorio.
 
 - Registro, login, perfil y logout usan las respuestas reales de la API. Logout requiere revocacion exitosa en el servidor; un rechazo de autorizacion invalida la sesion local.
+- El registro requiere el backend con verificacion por correo: `POST /api/v1/usuarios` responde `202` con `registro_id`, `correo`, `expira_en_minutos` y `reenviar_en_segundos`. La app abre seis casillas individuales sin pegado y conserva el registro pendiente al recrear la pantalla. Solo `POST /api/v1/usuarios/verificar` con `registro_id` y `codigo` (texto, incluidos ceros iniciales), tras responder `201`, permite mostrar la cuenta creada y volver al login. No se guarda una sesion antes de verificar.
+- El codigo vence a los 35 minutos y admite cuatro intentos. La pantalla muestra errores del servidor y permite `POST /api/v1/usuarios/reenviar-codigo`, respetando la espera y `Retry-After`. Volver al formulario permite corregir un correo equivocado. El backend debe tener configurado el correo remitente; esta app no contiene credenciales SMTP.
 - Check-ins, contactos, balance, solicitudes, calendario y alertas SOS consultan o guardan datos mediante la API. Las listas recorren la paginacion del servidor.
 - Para ofrecer relevos a la red, el backend debe incluir `GET /api/v1/relevos/disponibles`. La persona asignada puede completar el relevo; quien lo solicita no puede completarlo en su nombre.
 - La solicitud permite seleccionar Estudio, Clases, Compras o Casa. El horario usa `YYYY-MM-DD HH:mm - HH:mm`, por ejemplo `2099-12-01 09:00 - 10:30`.
@@ -13,6 +15,7 @@ El cliente actual usa Kotlin, Jetpack Compose y Retrofit. La URL del backend se 
 - No se registran cuerpos HTTP con contrasenas o tokens. Los errores de la API no se presentan como operaciones exitosas.
 
 Con JDK 17 y el SDK Android configurados, ejecutar `.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain`. Las pruebas de contrato usan MockWebServer local y no se conectan al servidor real. No sustituyen pruebas visuales ni de extremo a extremo con un dispositivo.
+Las pruebas de la pantalla del codigo usan un emulador/dispositivo con `.\gradlew.bat :app:connectedDebugAndroidTest --console=plain`; comprueban las casillas, el bloqueo del pegado, los errores y el reenvio con un servidor de pruebas.
 
 ## Integrantes del Equipo
 * **Línea de Desarrollo:** (App Psicosocial)

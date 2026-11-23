@@ -13,7 +13,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,7 +35,6 @@ import com.redcuidadora.app.ui.screens.PerfilScreen
 import com.redcuidadora.app.ui.screens.RedScreen
 import com.redcuidadora.app.ui.screens.SolicitudesScreen
 import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
-import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -65,46 +63,23 @@ class MainActivity : ComponentActivity() {
                     if (TokenManager.isLoggedIn(this@MainActivity)) Screen.Home.route else Screen.Login.route
                 }
 
-                LaunchedEffect(navController) {
-                    TokenManager.changes.collect {
-                        if (!TokenManager.isLoggedIn(this@MainActivity) &&
-                            navController.currentDestination?.route != Screen.Login.route
-                        ) {
-                            showActionChoiceSheet = false
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        }
-                    }
-                }
-                LaunchedEffect(currentRoute) {
-                    while (currentRoute != null && currentRoute != Screen.Login.route) {
-                        if (!TokenManager.isLoggedIn(this@MainActivity)) {
-                            showActionChoiceSheet = false
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                            break
-                        }
-                        delay(1000)
-                    }
-                }
-
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     bottomBar = {
-                        if (shouldShowBottomBar) {
+                        if (shouldShowBottomBar && currentRoute != Screen.Solicitudes.route) {
                             RedCuidadoraBottomNavigation(
                                 currentRoute = currentRoute,
                                 onNavigateToRoute = { route ->
-                                    navController.navigate(route) {
-                                        popUpTo(Screen.Home.route) {
-                                            saveState = true
+                                    if (route == Screen.Home.route) {
+                                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                                    } else {
+                                        navController.navigate(route) {
+                                            popUpTo(Screen.Home.route) {
+                                                saveState = false
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = false
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
                                 },
                             )
@@ -134,7 +109,9 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.Home.route) {
                                 HomeScreen(
                                     onNavigateToSolicitudes = {
-                                        navController.navigate(Screen.Solicitudes.route)
+                                        navController.navigate(Screen.Solicitudes.route) {
+                                            launchSingleTop = true
+                                        }
                                     },
                                     onNavigateToCheckIn = { level ->
                                         checkInLevel = level
@@ -155,6 +132,18 @@ class MainActivity : ComponentActivity() {
                             }
                             composable(Screen.Solicitudes.route) {
                                 SolicitudesScreen(
+                                    bottomBar = {
+                                        RedCuidadoraBottomNavigation(
+                                            currentRoute = currentRoute,
+                                            onNavigateToRoute = { route ->
+                                                navController.navigate(route) {
+                                                    popUpTo(Screen.Home.route) { saveState = false }
+                                                    launchSingleTop = true
+                                                    restoreState = false
+                                                }
+                                            },
+                                        )
+                                    },
                                     onOpenActionChoice = {
                                         showActionChoiceSheet = true
                                     },
@@ -166,7 +155,9 @@ class MainActivity : ComponentActivity() {
                             composable(Screen.Calendario.route) {
                                 CalendarioScreen(
                                     onNavigateToSolicitudes = {
-                                        navController.navigate(Screen.Solicitudes.route)
+                                        navController.navigate(Screen.Solicitudes.route) {
+                                            launchSingleTop = true
+                                        }
                                     },
                                 )
                             }

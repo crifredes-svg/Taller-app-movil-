@@ -18,17 +18,35 @@ fun currentWeekDates(): List<String> {
 data class ReliefSchedule(val date: String, val start: String, val end: String)
 
 fun parseReliefSchedule(value: String): ReliefSchedule {
-    val match = Regex("""^(\d{4}-\d{2}-\d{2}) ([0-2]\d:[0-5]\d) - ([0-2]\d:[0-5]\d)$""")
-        .matchEntire(value.trim())
-        ?: error("Usa el horario YYYY-MM-DD HH:mm - HH:mm.")
-    val (date, start, end) = match.destructured
+    val clean = value.trim()
+    val matchYmd = Regex("""^(\d{4}[-/]\d{2}[-/]\d{2}) ([0-2]?\d:[0-5]\d) - ([0-2]?\d:[0-5]\d)$""").matchEntire(clean)
+    val matchDmy = Regex("""^(\d{2}[-/]\d{2}[-/]\d{4}) ([0-2]?\d:[0-5]\d) - ([0-2]?\d:[0-5]\d)$""").matchEntire(clean)
+
+    val (dateRaw, startRaw, endRaw) = when {
+        matchYmd != null -> matchYmd.destructured
+        matchDmy != null -> matchDmy.destructured
+        else -> error("Usa el horario DD-MM-YYYY HH:mm - HH:mm (ej. 15-05-2027 09:30 - 13:00).")
+    }
+
+    fun formatHour(h: String): String = if (h.length == 4) "0$h" else h
+
+    val start = formatHour(startRaw)
+    val end = formatHour(endRaw)
+
+    val isoDate = if (matchDmy != null) {
+        val parts = dateRaw.replace('/', '-').split("-")
+        "${parts[2]}-${parts[1]}-${parts[0]}"
+    } else {
+        dateRaw.replace('/', '-')
+    }
+
     val format = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply { isLenient = false }
-    require(runCatching { format.parse(date)?.let(format::format) == date }.getOrDefault(false)) {
+    require(runCatching { format.parse(isoDate)?.let(format::format) == isoDate }.getOrDefault(false)) {
         "Ingresa una fecha válida."
     }
-    require(date >= todayIso()) { "La fecha no puede estar en el pasado." }
-    require(start < "24:00" && end < "24:00" && start < end) { "La hora final debe ser posterior al inicio, en el mismo día." }
-    return ReliefSchedule(date, start, end)
+    require(isoDate >= todayIso()) { "La fecha no puede estar en el pasado." }
+    require(start < "24:00" && end < "24:00" && start < end) { "La hora final debe ser posterior al inicio." }
+    return ReliefSchedule(isoDate, start, end)
 }
 
 fun SolicitudRelevoDto.hours(): Double {

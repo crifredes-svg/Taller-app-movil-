@@ -1,9 +1,8 @@
 package com.redcuidadora.app.ui.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +18,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -39,13 +38,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.redcuidadora.app.ui.components.StatusNotificationBanner
 import com.redcuidadora.app.data.local.TokenManager
 import com.redcuidadora.app.data.network.*
+import com.redcuidadora.app.ui.components.StatusNotificationBanner
 import com.redcuidadora.app.ui.theme.DarkSurface
 import com.redcuidadora.app.ui.theme.DarkSurfaceVariant
 import com.redcuidadora.app.ui.theme.PrimaryEmerald
 import com.redcuidadora.app.ui.theme.RedCuidadoraTheme
+import com.redcuidadora.app.ui.theme.StatusAmber
 import com.redcuidadora.app.ui.theme.TextPrimaryDark
 import com.redcuidadora.app.ui.theme.TextSecondaryDark
 
@@ -58,7 +58,7 @@ fun CrearSolicitudScreen(
     var titulo by remember { mutableStateOf("") }
     var horario by remember { mutableStateOf("") }
     var detalles by remember { mutableStateOf("") }
-    var tipo by remember { mutableStateOf<String?>(null) }
+    var tipo by remember { mutableStateOf<String?>("estudio") }
     val action = rememberApiAction()
 
     Column(
@@ -103,7 +103,7 @@ fun CrearSolicitudScreen(
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = titulo,
-            onValueChange = { titulo = it },
+            onValueChange = { if (it.length <= 80) titulo = it },
             placeholder = { Text("Ej. Relevo para clases presenciales y taller", color = TextSecondaryDark) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -139,8 +139,10 @@ fun CrearSolicitudScreen(
                         labelColor = TextSecondaryDark,
                     ),
                     border = FilterChipDefaults.filterChipBorder(
-                        enabled = true, selected = selected,
-                        borderColor = DarkSurfaceVariant, selectedBorderColor = PrimaryEmerald,
+                        enabled = true,
+                        selected = selected,
+                        borderColor = DarkSurfaceVariant,
+                        selectedBorderColor = PrimaryEmerald,
                     ),
                 )
             }
@@ -157,7 +159,7 @@ fun CrearSolicitudScreen(
         OutlinedTextField(
             value = horario,
             onValueChange = { horario = it },
-            placeholder = { Text("YYYY-MM-DD HH:mm - HH:mm", color = TextSecondaryDark) },
+            placeholder = { Text("DD-MM-YYYY HH:mm - HH:mm", color = TextSecondaryDark) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
@@ -172,16 +174,27 @@ fun CrearSolicitudScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Detalles adicionales para tu red",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimaryDark,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Detalles adicionales para tu red",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimaryDark,
+            )
+            Text(
+                text = "${detalles.length}/2000",
+                fontSize = 12.sp,
+                color = if (detalles.length > 1950) StatusAmber else TextSecondaryDark,
+            )
+        }
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = detalles,
-            onValueChange = { detalles = it },
+            onValueChange = { if (it.length <= 2000) detalles = it },
             placeholder = { Text("Ej. Asistir a taller universitario. Dejar almuerzo servido.", color = TextSecondaryDark) },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
@@ -201,18 +214,24 @@ fun CrearSolicitudScreen(
 
         Button(
             onClick = {
-                action.run("Solicitud de relevo publicada") {
-                    val type = tipo ?: error("Selecciona el tipo de relevo.")
+                action.run("Solicitud de relevo publicada", onSuccess = { onNavigateBack() }) {
+                    val type = tipo ?: "estudio"
                     val title = titulo.trim()
                     require(title.length in 3..80) { "El título debe tener entre 3 y 80 caracteres." }
-                    require(detalles.trim().length in 10..200) { "Los detalles deben tener entre 10 y 200 caracteres." }
+                    val rawDetalles = detalles.trim()
+                    require(rawDetalles.length >= 10) { "Los detalles deben tener al menos 10 caracteres." }
+                    val descripcionFinal = rawDetalles.take(200)
                     val schedule = parseReliefSchedule(horario)
                     val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
                     RetrofitClient.getApiService(context).crearSolicitudRelevo(
                         SolicitudRelevoDto(
-                            solicitanteId = id, titulo = title, tipo = type,
-                            descripcion = detalles.trim(), fecha = schedule.date,
-                            horaInicio = schedule.start, horaFin = schedule.end,
+                            solicitanteId = id,
+                            titulo = title,
+                            tipo = type,
+                            descripcion = descripcionFinal,
+                            fecha = schedule.date,
+                            horaInicio = schedule.start,
+                            horaFin = schedule.end,
                         ),
                     ).requireBody(201)
                 }
@@ -225,7 +244,7 @@ fun CrearSolicitudScreen(
             shape = RoundedCornerShape(14.dp),
         ) {
             Text(
-                text = "Publicar Solicitud de Relevo",
+                text = if (action.busy) "Publicando..." else "Publicar Solicitud de Relevo",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimaryDark,
                 fontWeight = FontWeight.Bold,

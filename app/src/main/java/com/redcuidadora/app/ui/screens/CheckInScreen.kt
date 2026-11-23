@@ -37,6 +37,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -45,12 +46,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.redcuidadora.app.data.local.TokenManager
-import com.redcuidadora.app.data.network.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.redcuidadora.app.data.local.TokenManager
+import com.redcuidadora.app.data.network.*
+import com.redcuidadora.app.ui.components.StatusNotificationBanner3
 import com.redcuidadora.app.ui.navigation.RedCuidadoraBottomNavigation
 import com.redcuidadora.app.ui.navigation.Screen
 import com.redcuidadora.app.ui.theme.DarkSurface
@@ -64,6 +66,21 @@ import com.redcuidadora.app.ui.theme.StatusRed
 import com.redcuidadora.app.ui.theme.TextPrimaryDark
 import com.redcuidadora.app.ui.theme.TextSecondaryDark
 
+private fun normalizeLevelKey(s: String): String {
+    val clean = s.lowercase().trim()
+    return when {
+        clean.contains("bien") -> "bien"
+        clean.contains("cansad") -> "algo_cansada"
+        clean.contains("apoyo") -> "necesito_apoyo"
+        clean.contains("sobrepasad") -> "sobrepasada"
+        else -> clean
+    }
+}
+
+private fun isSameCheckInLevel(levelA: String, levelB: String): Boolean {
+    return normalizeLevelKey(levelA) == normalizeLevelKey(levelB)
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CheckInScreen(
@@ -72,17 +89,48 @@ fun CheckInScreen(
 ) {
     val context = LocalContext.current
     val action = rememberApiAction()
-    var selectedLevel by remember { mutableStateOf(initialLevel) }
     val selectedFactors = remember {
         mutableStateListOf<String>()
     }
     var notesText by remember { mutableStateOf("") }
 
+    val currentUser = remember(context) {
+        try {
+            TokenManager.getUser(context)
+        } catch (_: Exception) {
+            null
+        }
+    }
+    val isMale = currentUser?.genero?.lowercase() == "masculino"
+    val userId = TokenManager.getUserId(context)
+
+    val checkIns = rememberRemoteData(userId) {
+        if (userId == null) emptyList()
+        else allPages { RetrofitClient.getApiService(context).listarCheckIns(userId, it) }
+    }
+    val latestNivel = checkIns.data?.maxByOrNull { it.fecha.orEmpty() }?.nivel
+
+    var selectedLevel by remember { mutableStateOf(initialLevel) }
+    var hasLoadedInitialSavedLevel by remember { mutableStateOf(false) }
+
+    LaunchedEffect(latestNivel) {
+        if (!hasLoadedInitialSavedLevel && latestNivel != null) {
+            hasLoadedInitialSavedLevel = true
+            selectedLevel = when (latestNivel) {
+                "bien" -> "Estoy bien"
+                "algo_cansada" -> if (isMale) "Algo cansado" else "Algo cansada"
+                "necesito_apoyo" -> "Necesito apoyo"
+                "sobrepasada" -> if (isMale) "Sobrepasado" else "Sobrepasada"
+                else -> initialLevel
+            }
+        }
+    }
+
     val levels = listOf(
-        Triple("Estoy bien", "Tranquila y organizada", StatusGreen),
-        Triple("Algo cansada", "Batería baja pero rindiendo", StatusAmber),
+        Triple("Estoy bien", if (isMale) "Tranquilo y organizado" else "Tranquila y organizada", StatusGreen),
+        Triple(if (isMale) "Algo cansado" else "Algo cansada", "Batería baja pero rindiendo", StatusAmber),
         Triple("Necesito apoyo", "Al límite de mis fuerzas", StatusOrange),
-        Triple("Sobrepasada", "Emergencia, necesito relevo", StatusRed),
+        Triple(if (isMale) "Sobrepasado" else "Sobrepasada", "Emergencia, necesito relevo", StatusRed),
     )
 
     val factorsList = listOf(
@@ -150,7 +198,7 @@ fun CheckInScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     rowLevels.forEach { (title, subtitle, color) ->
-                        val isSelected = selectedLevel == title
+                        val isSelected = isSameCheckInLevel(selectedLevel, title)
                         Card(
                             modifier = Modifier
                                 .weight(1f)
@@ -275,22 +323,32 @@ fun CheckInScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        if (action.message != null) {
+            StatusNotificationBanner3(message = action.message!!, isSuccess = action.success)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // Save Button
         Button(
             onClick = {
-                action.run("Estado guardado", onSuccess = onNavigateBack) {
-                    require(notesText.length <= 200) { "La nota admite hasta 200 caracteres." }
-                    val factors = selectedFactors.joinToString(",")
-                    require(factors.length <= 200) { "Selecciona menos factores (máximo 200 caracteres)." }
-                    val id = TokenManager.getUserId(context) ?: error("Inicia sesión nuevamente.")
-                    val level = when (selectedLevel) {
-                        "Estoy bien" -> "bien"
-                        "Algo cansada" -> "algo_cansada"
-                        "Necesito apoyo" -> "necesito_apoyo"
-                        else -> "sobrepasada"
-                    }
+                val nivelBackend = normalizeLevelKey(selectedLevel)
+                val currentUserId = try {
+                    TokenManager.getUserId(context)
+                } catch (_: Exception) {
+                    null
+                }
+                if (currentUserId == null) {
+                    action.run("Inicia sesión nuevamente para guardar el estado.", onSuccess = {}) {}
+                    return@Button
+                }
+                action.run("Estado de carga guardado exitosamente.", onSuccess = { onNavigateBack() }) {
                     RetrofitClient.getApiService(context).crearCheckIn(
-                        id, CheckInDto(nivel = level, factores = factors.ifBlank { null }, nota = notesText.trim().ifBlank { null }),
+                        currentUserId,
+                        CheckInDto(
+                            nivel = nivelBackend,
+                            factores = if (selectedFactors.isEmpty()) null else selectedFactors.joinToString(", "),
+                            nota = notesText.ifBlank { null },
+                        ),
                     ).requireBody(201)
                 }
             },
@@ -302,7 +360,7 @@ fun CheckInScreen(
             shape = RoundedCornerShape(14.dp),
         ) {
             Text(
-                text = "Guardar estado",
+                text = if (action.busy) "Guardando..." else "Guardar estado",
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimaryDark,
                 fontWeight = FontWeight.Bold,

@@ -11,7 +11,7 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
-val serverBaseUrl = localProperties.getProperty("server.base.url") ?: "https://simultaneously-propecia-dimensional-senators.trycloudflare.com/"
+val serverBaseUrl = localProperties.getProperty("server.base.url") ?: "https://api3.uniteccftla.space/"
 
 android {
     namespace = "com.redcuidadora.app"
@@ -33,7 +33,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -70,4 +70,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.okhttp.mockwebserver)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

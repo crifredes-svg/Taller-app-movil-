@@ -28,9 +28,9 @@ object RetrofitClient {
             val baseUrlRaw = try {
                 val buildConfigClass = Class.forName("com.redcuidadora.app.BuildConfig")
                 val field = buildConfigClass.getField("BASE_URL")
-                ((field[null] as? String) ?: "https://simultaneously-propecia-dimensional-senators.trycloudflare.com/")
+                ((field[null] as? String) ?: "https://api3.uniteccftla.space/")
             } catch (_: Exception) {
-                "https://simultaneously-propecia-dimensional-senators.trycloudflare.com/"
+                "https://api3.uniteccftla.space/"
             }
 
             val baseUrl = if (baseUrlRaw.endsWith("/")) baseUrlRaw else "$baseUrlRaw/"

@@ -34,19 +34,27 @@ class ApiContractTest {
     }
 
     @Test
-    fun registrationUsesBackendFieldsAndExact201() = runBlocking {
-        respond(201, """{"id":1,"nombre":"Persona","correo":"persona@example.com","codigo_unico":"RC-A1B2C3"}""")
-        val user = api.crearUsuario(UsuarioDto(
+    fun registrationWaitsForEmailVerification() = runBlocking {
+        respond(202, """{"registro_id":"pending-registration-id","correo":"persona@example.com","expira_en_minutos":35,"reenviar_en_segundos":60}""")
+        val pending = api.crearUsuario(UsuarioDto(
             nombre = "Persona", correo = "persona@example.com",
             password = "EjemploSeguro123", genero = "masculino",
-        )).requireBody(201)
-        assertEquals("RC-A1B2C3", user.codigoUnico)
+        )).requireBody(202)
+        assertEquals("pending-registration-id", pending.registroId)
+        assertEquals(35, pending.expiraEnMinutos)
         val request = server.takeRequest()
         assertEquals("/api/v1/usuarios", request.path)
         val body = JsonParser.parseString(request.body.readUtf8()).asJsonObject
         assertEquals("masculino", body["genero"].asString)
         assertEquals("persona@example.com", body["correo"].asString)
         assertFalse(body.has("persona_cuidada_edad"))
+
+        respond(201, """{"id":1,"nombre":"Persona","correo":"persona@example.com","codigo_unico":"RC-A1B2C3"}""")
+        val user = api.verificarRegistro(VerificacionRegistroDto(pending.registroId, "012345")).requireBody(201)
+        assertEquals("RC-A1B2C3", user.codigoUnico)
+        val verification = server.takeRequest()
+        assertEquals("/api/v1/usuarios/verificar", verification.path)
+        assertEquals("012345", JsonParser.parseString(verification.body.readUtf8()).asJsonObject["codigo"].asString)
     }
 
     @Test

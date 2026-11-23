@@ -28,10 +28,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,7 +41,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.redcuidadora.app.data.local.TokenManager
 import com.redcuidadora.app.data.network.ApiErrorParser
+import com.redcuidadora.app.data.network.ApiService
 import com.redcuidadora.app.data.network.LoginInDto
+import com.redcuidadora.app.data.network.RegistroPendienteDto
 import com.redcuidadora.app.data.network.RetrofitClient
 import com.redcuidadora.app.data.network.UsuarioDto
 import com.redcuidadora.app.ui.components.Gender
@@ -58,19 +62,20 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     initialTab: Int = 0,
     previewState: String? = null,
+    apiService: ApiService? = null,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    var selectedTabIndex by remember { mutableIntStateOf(initialTab) } // 0: Login, 1: Registro
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(initialTab) } // 0: Login, 1: Registro
 
     // Login fields
-    var loginCorreo by remember { mutableStateOf("") }
+    var loginCorreo by rememberSaveable { mutableStateOf("") }
     var loginPassword by remember { mutableStateOf("") }
 
     // Register fields
     var regNombre by remember { mutableStateOf("") }
-    var regCorreo by remember { mutableStateOf("") }
+    var regCorreo by rememberSaveable { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
     var regOcupacion by remember { mutableStateOf("Estudiante y cuidadora") }
     var regGenero by remember { mutableStateOf(Gender.FEMALE) }
@@ -96,6 +101,31 @@ fun LoginScreen(
         )
     }
     var isSubmitting by remember { mutableStateOf(value = false) }
+    var pendingRegistration by rememberSaveable { mutableStateOf<RegistroPendienteDto?>(null) }
+
+    pendingRegistration?.let { pending ->
+        VerificationScreen(
+            registration = pending,
+            api = apiService ?: RetrofitClient.getApiService(context),
+            onVerified = { user ->
+                pendingRegistration = null
+                regPassword = ""
+                loginCorreo = user.correo
+                selectedTabIndex = 0
+                errorMessage = null
+                successMessage = if (user.codigoUnico.isNullOrBlank()) {
+                    "¡Correo verificado y cuenta creada! Ahora inicia sesión."
+                } else {
+                    "¡Correo verificado y cuenta creada! Tu código único es: ${user.codigoUnico}. Ahora inicia sesión."
+                }
+            },
+            onBack = {
+                pendingRegistration = null
+                selectedTabIndex = 1
+            },
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -142,6 +172,7 @@ fun LoginScreen(
         ) {
             Tab(
                 selected = selectedTabIndex == 0,
+                enabled = !isSubmitting,
                 onClick = {
                     selectedTabIndex = 0
                     errorMessage = null
@@ -157,6 +188,7 @@ fun LoginScreen(
             )
             Tab(
                 selected = selectedTabIndex == 1,
+                enabled = !isSubmitting,
                 onClick = {
                     selectedTabIndex = 1
                     errorMessage = null
@@ -239,7 +271,7 @@ fun LoginScreen(
 
                     coroutineScope.launch {
                         try {
-                            val api = RetrofitClient.getApiService(context)
+                            val api = apiService ?: RetrofitClient.getApiService(context)
                             val response = api.iniciarSesion(LoginInDto(loginCorreo.trim(), loginPassword))
 
                             val body = response.body()
@@ -294,7 +326,7 @@ fun LoginScreen(
                 value = regNombre,
                 onValueChange = { regNombre = it },
                 placeholder = { Text("María González", color = TextSecondaryDark) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("register-name"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = DarkSurface,
@@ -319,7 +351,7 @@ fun LoginScreen(
                 value = regCorreo,
                 onValueChange = { regCorreo = it },
                 placeholder = { Text("tu_correo@ejemplo.com", color = TextSecondaryDark) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("register-email"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = DarkSurface,
@@ -345,7 +377,7 @@ fun LoginScreen(
                 onValueChange = { regPassword = it },
                 placeholder = { Text("Mínimo 12 caracteres", color = TextSecondaryDark) },
                 visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("register-password"),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = DarkSurface,
@@ -480,27 +512,27 @@ fun LoginScreen(
 
                     coroutineScope.launch {
                         try {
-                            val api = RetrofitClient.getApiService(context)
+                            val api = apiService ?: RetrofitClient.getApiService(context)
                             val response = api.crearUsuario(usuarioIn)
 
-                            val userCreated = response.body()
-                            if (response.code() == 201 && userCreated != null) {
-                                val codigo = userCreated.codigoUnico
-                                successMessage = if (codigo.isNullOrBlank()) {
-                                    "¡Cuenta creada! Ahora inicia sesión."
-                                } else {
-                                    "¡Cuenta creada! Tu código único es: $codigo. Ahora inicia sesión."
-                                }
+                            val pending = response.body()
+                            if (response.code() == 202 && pending != null &&
+                                !pending.registroId.isNullOrBlank() && !pending.correo.isNullOrBlank() &&
+                                pending.expiraEnMinutos > 0 && pending.reenviarEnSegundos >= 0
+                            ) {
                                 regPassword = ""
-                                loginCorreo = regCorreo
-                                selectedTabIndex = 0
+                                pendingRegistration = pending
+                            } else if (response.isSuccessful) {
+                                errorMessage = "El servidor no devolvió un registro pendiente válido."
                             } else {
                                 errorMessage = ApiErrorParser.parseError(response)
                             }
                         } catch (e: kotlinx.coroutines.CancellationException) {
                             throw e
-                        } catch (_: Exception) {
+                        } catch (_: java.io.IOException) {
                             errorMessage = "No se pudo conectar con el servidor. Inténtalo nuevamente."
+                        } catch (_: com.google.gson.JsonParseException) {
+                            errorMessage = "El servidor devolvió una respuesta inválida."
                         } finally {
                             isSubmitting = false
                         }
@@ -514,7 +546,7 @@ fun LoginScreen(
                 shape = RoundedCornerShape(14.dp),
             ) {
                 Text(
-                    text = if (isSubmitting) "Creando cuenta..." else "Registrarme",
+                    text = if (isSubmitting) "Enviando código..." else "Registrarme",
                     style = MaterialTheme.typography.titleMedium,
                     color = TextPrimaryDark,
                     fontWeight = FontWeight.Bold,
