@@ -3,9 +3,14 @@
 .vscode/
 .idea/
 
+# Gradle y Android local
+.gradle/
+build/
+app/build/
+local.properties
+
 # Dependencias y compilados
 node_modules/
-build/
 dist/
 __pycache__/
 .venv/

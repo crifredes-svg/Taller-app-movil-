@@ -1,5 +1,19 @@
 # Proyecto Taller App Móvil
 
+## Integracion Android con la API
+
+El cliente actual usa Kotlin, Jetpack Compose y Retrofit. La URL del backend se configura con `server.base.url` en `local.properties`; no guardar credenciales ni tokens en ese archivo ni en el repositorio.
+
+- Registro, login, perfil y logout usan las respuestas reales de la API. Logout requiere revocacion exitosa en el servidor; un rechazo de autorizacion invalida la sesion local.
+- Check-ins, contactos, balance, solicitudes, calendario y alertas SOS consultan o guardan datos mediante la API. Las listas recorren la paginacion del servidor.
+- Para ofrecer relevos a la red, el backend debe incluir `GET /api/v1/relevos/disponibles`. La persona asignada puede completar el relevo; quien lo solicita no puede completarlo en su nombre.
+- La solicitud permite seleccionar Estudio, Clases, Compras o Casa. El horario usa `YYYY-MM-DD HH:mm - HH:mm`, por ejemplo `2099-12-01 09:00 - 10:30`.
+- El campo de persona cuidada del perfil admite un nombre, opcionalmente seguido por la edad: `Nombre (82 años)`. Dejar campos opcionales vacios los elimina al guardar.
+- Las alertas SOS se consultan al cargar o retomar la pantalla; no hay entrega push. Las llamadas y mensajes no estan disponibles porque el contrato no proporciona numeros de telefono.
+- No se registran cuerpos HTTP con contrasenas o tokens. Los errores de la API no se presentan como operaciones exitosas.
+
+Con JDK 17 y el SDK Android configurados, ejecutar `.\gradlew.bat :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --console=plain`. Las pruebas de contrato usan MockWebServer local y no se conectan al servidor real. No sustituyen pruebas visuales ni de extremo a extremo con un dispositivo.
+
 ## Integrantes del Equipo
 * **Línea de Desarrollo:** (App Psicosocial)
 * **Frontend & UI:** Cristian Flores
