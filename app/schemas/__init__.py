@@ -6,6 +6,7 @@ from .schemas import (
     AlertaSOSOut,
     BalanceContactoOut,
     BalanceRedOut,
+    CancelacionRelevoOut,
     CheckInIn,
     CheckInOut,
     ContactoConfianzaIn,
@@ -15,7 +16,9 @@ from .schemas import (
     LoginIn,
     LogoutOut,
     PerfilUpdate,
+    ReenvioCodigoIn,
     RegistroOut,
+    RegistroPendienteOut,
     ResumenSemanaOut,
     SolicitudRelevoEstadoIn,
     SolicitudRelevoIn,
@@ -24,6 +27,8 @@ from .schemas import (
     TokenOut,
     UsuarioIn,
     UsuarioOut,
+    VerificacionRegistroIn,
+    NotificacionOut,
 )
 
 __all__ = [
@@ -32,6 +37,7 @@ __all__ = [
     "AlertaSOSOut",
     "BalanceContactoOut",
     "BalanceRedOut",
+    "CancelacionRelevoOut",
     "CheckInIn",
     "CheckInOut",
     "ContactoConfianzaIn",
@@ -41,7 +47,9 @@ __all__ = [
     "LoginIn",
     "LogoutOut",
     "PerfilUpdate",
+    "ReenvioCodigoIn",
     "RegistroOut",
+    "RegistroPendienteOut",
     "ResumenSemanaOut",
     "SolicitudRelevoEstadoIn",
     "SolicitudRelevoIn",
@@ -50,4 +58,6 @@ __all__ = [
     "TokenOut",
     "UsuarioIn",
     "UsuarioOut",
+    "VerificacionRegistroIn",
+    "NotificacionOut",
 ]

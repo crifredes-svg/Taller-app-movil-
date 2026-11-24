@@ -1,5 +1,7 @@
 """Authentication and password hashing operations."""
 
+import hashlib
+import hmac
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -38,6 +40,29 @@ def verify_password(password: str, password_hash: str | None) -> bool:
         password_hasher.verify(password, _DUMMY_PASSWORD_HASH)
         return False
     return password_hasher.verify(password, password_hash)
+
+
+def hash_registration_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def hash_verification_code(registration_hash: str, code: str) -> str:
+    return hmac.new(
+        _jwt_secret().encode("utf-8"),
+        f"{registration_hash}:{code}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_verification_code(
+    registration_hash: str,
+    code: str,
+    stored_hash: str,
+) -> bool:
+    return hmac.compare_digest(
+        hash_verification_code(registration_hash, code),
+        stored_hash,
+    )
 
 
 def create_access_token(user_id: int, token_version: int = 0) -> str:

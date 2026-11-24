@@ -1,12 +1,13 @@
 """Profile routes and HTTP controller."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from ...database import get_db
 from ...models.usuarios.model import Usuario
 from ...security import get_current_user
 from ...models.usuarios.model import actualizar_mi_perfil as ejecutar_actualizar_mi_perfil
+from ...models.usuarios.model import eliminar_mi_cuenta as ejecutar_eliminar_mi_cuenta
 from ...views.usuarios.view import PerfilUpdate, UsuarioOut
 
 router_perfil = APIRouter(
@@ -21,3 +22,12 @@ def actualizar_mi_perfil(
     db: Session = Depends(get_db),
 ):
     return ejecutar_actualizar_mi_perfil(datos, current_user, db)
+
+
+@router_perfil.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_mi_cuenta(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    ejecutar_eliminar_mi_cuenta(current_user, db)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

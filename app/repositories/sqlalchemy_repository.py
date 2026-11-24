@@ -27,6 +27,12 @@ class SqlAlchemyRepository:
     def add(self, entity: object) -> None:
         self._session.add(entity)
 
+    def delete(self, entity: object) -> None:
+        self._session.delete(entity)
+
+    def flush(self) -> None:
+        self._session.flush()
+
     def refresh(self, entity: object) -> None:
         self._session.refresh(entity)
 

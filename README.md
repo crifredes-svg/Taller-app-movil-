@@ -64,22 +64,48 @@ alembic upgrade head` y luego `docker compose up --build -d`. La migración más
 reciente rellena `codigo_unico` para usuarios que ya existían.
 
 **Seguridad:** todo acceso a datos exige `Authorization: Bearer <token>`.
-Registra la cuenta
-con `POST /api/v1/usuarios` (incluye contraseña de al menos 12 caracteres) e
-inicia sesión con `POST /api/v1/auth/login` para obtener un JWT de 30 minutos.
-El registro devuelve el perfil creado y el login devuelve el perfil propio junto
+El registro se completa en dos pasos. `POST /api/v1/usuarios` (contraseña de al
+menos 12 caracteres) no crea la cuenta: guarda un registro pendiente, envía un
+código de 6 dígitos al correo y responde `202` con `registro_id`,
+`expira_en_minutos` (35) y `reenviar_en_segundos` (60). La cuenta se crea solo
+con `POST /api/v1/usuarios/verificar` (`registro_id` y `codigo`), que responde
+`201` con el perfil. Se permiten 4 intentos por código; luego hay que pedir otro
+con `POST /api/v1/usuarios/reenviar-codigo` (`registro_id`), disponible una vez
+por minuto. Un nuevo registro con el mismo correo invalida el `registro_id`
+anterior. Los registros pendientes dejan de servir a las 24 horas y se eliminan
+al procesar un nuevo registro (no hay una tarea de borrado programada). Errores:
+`400` código incorrecto, `404` registro inexistente o vencido, `410` código
+vencido, `429` intentos agotados o reenvío antes de tiempo y `503` si el correo
+no pudo enviarse. El envío usa SMTP configurado con `SMTP_HOST`, `SMTP_PORT`,
+`SMTP_USER`, `SMTP_PASSWORD` y `SMTP_FROM` (ver `.env.example`); con Gmail se
+necesita una contraseña de aplicación. Las cuentas que ya existían no requieren
+verificación.
+Inicia sesión con `POST /api/v1/auth/login` para obtener un JWT de 30 minutos.
+El registro valida el formato del correo y permite solo extensiones conocidas,
+como `.com`, `.cl`, `.net`, `.org`, `.edu` y `.es`.
+La verificación devuelve el perfil creado y el login devuelve el perfil propio junto
 al token para que el cliente pueda cargar la pantalla sin un GET de usuarios.
 El JWT se firma con `JWT_SECRET`, que debe ser distinto, aleatorio y de al menos
-32 bytes en cada entorno. El registro y login son públicos; los demás endpoints
+32 bytes en cada entorno. El registro, su verificación, el reenvío del código y
+el login son públicos; los demás endpoints
 de datos exigen token. Los recursos por usuario se limitan al propietario, con
 excepciones controladas para aceptación de relevos y respuesta a SOS.
 
-En el router de usuarios la única ruta es `POST /api/v1/usuarios` para registro.
+En el router de usuarios solo existen las rutas `POST` de registro,
+verificación y reenvío del código.
 No se expone ningún GET para listar o consultar perfiles de usuario.
 La pantalla de perfil guarda cambios propios mediante
 `PATCH /api/v1/perfil/me`, protegido por bearer; no acepta un ID de usuario.
 El texto libre del perfil se guarda en `ocupacion`; `tipo` se mantiene como
 clasificación interna `estudiante` o `red`.
+La eliminación permanente de la cuenta autenticada se realiza con
+`DELETE /api/v1/perfil/me` (sin ID ni cuerpo). Elimina sus datos, contactos
+vinculados y solicitudes de relevo en las que figure como solicitante o cuidador.
+Si tenía un relevo aceptado, la otra parte recibe una notificación persistente
+que explica cuál cuenta se eliminó y que el relevo ya no está disponible:
+`GET /api/v1/notificaciones` lista las pendientes y
+`PATCH /api/v1/notificaciones/{id}/leida` la marca como leída. Ambos endpoints
+requieren bearer y solo permiten acceder a las notificaciones propias.
 
 Para añadir contactos, el código nuevo se muestra como `RC-` más seis dígitos
 hexadecimales (ejemplo `RC-D35C82`). `POST /api/v1/contactos/usuarios/{id}/por-codigo`
@@ -100,7 +126,11 @@ Los integrantes de una red consultan solicitudes pendientes mediante
 `GET /api/v1/relevos/disponibles` (Bearer, paginación `limit`/`offset`).
 Solo devuelve solicitudes no pasadas de personas que los agregaron a su red.
 Aceptar un relevo lo asigna al integrante autenticado; completarlo no permite
-cambiar al cuidador asignado.
+cambiar al cuidador asignado. `POST /api/v1/relevos/{id}/cancelar` permite que
+el solicitante retire su relevo o que el cuidador asignado cancele su aceptación.
+En el primer caso se elimina la solicitud y se notifica al cuidador si ya había
+aceptado; en el segundo, la misma solicitud vuelve a pendiente, queda sin cuidador
+y se notifica al solicitante. Un relevo completado no se puede cancelar.
 El inicio consulta `GET /api/v1/checkins/tendencia`, que sugiere pedir apoyo si
 hay carga alta en al menos tres días distintos de los últimos cinco; es una
 regla preventiva simple, no un diagnóstico. Cuenta días distintos en toda la
@@ -109,8 +139,10 @@ ventana, sin truncarla a los últimos cien registros.
 Se incluye `postman/RedCuidadora.postman_collection.json` con pruebas de
 registro/login, perfil, check-in, red, relevo y SOS. Importa la colección y
 configura variables locales: `base_url`, `correo`, `password`, `helper_email` y
-`helper_password`. No uses credenciales reales en archivos versionados; para
-MySQL y `JWT_SECRET`, configura los secretos en el entorno de despliegue.
+`helper_password`. Los registros envían un código real al correo: después de
+cada registro, copia ese código en `codigo_verificacion` o
+`helper_codigo_verificacion` antes de ejecutar la verificación. No uses credenciales reales en archivos versionados; para
+MySQL, `JWT_SECRET` y SMTP, configura los secretos en el entorno de despliegue.
 
 En despliegue, termina TLS/HTTPS en un proxy inverso con certificado válido
 (por ejemplo, el proxy configurado en 1Panel); no publiques directamente el

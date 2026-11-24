@@ -11,6 +11,21 @@ from pydantic import (
     model_validator,
 )
 
+EXTENSIONES_CORREO_PERMITIDAS = frozenset(
+    {
+        "ai", "app", "ar", "asia", "at", "au", "be", "biz", "bo", "br",
+        "ca", "cat", "ch", "cl", "cn", "cloud", "co", "com", "coop", "cz",
+        "de", "dev", "dk", "edu", "ec", "es", "eu", "fi", "fm", "fr", "gov",
+        "hk", "hu", "id", "ie", "il", "in", "info", "int", "io", "is", "it",
+        "jobs", "jp", "kr", "la", "ly", "me", "mil", "mobi", "museum", "mx",
+        "name", "net", "nl", "no", "nz", "online", "org", "pe", "pl", "post",
+        "pro", "pt", "py", "ru", "se", "sg", "site", "store", "tech", "tel",
+        "th", "travel", "tr", "tv", "tw", "ua", "uk", "us", "uy", "ve",
+        "xyz", "za",
+    }
+)
+
+
 class UsuarioIn(BaseModel):
     nombre: str = Field(min_length=2, max_length=80)
     correo: EmailStr
@@ -35,6 +50,15 @@ class UsuarioIn(BaseModel):
         le=130,
     )
 
+    @field_validator("correo")
+    @classmethod
+    def validar_extension_correo(cls, correo: EmailStr) -> EmailStr:
+        extension = str(correo).rsplit("@", 1)[1].rsplit(".", 1)[-1].lower()
+        if extension not in EXTENSIONES_CORREO_PERMITIDAS:
+            raise ValueError("El correo debe usar una extensión permitida")
+        return correo
+
+
 class UsuarioOut(BaseModel):
     id: int
     nombre: str
@@ -56,6 +80,20 @@ class UsuarioOut(BaseModel):
 
 class RegistroOut(UsuarioOut):
     detail: str = "Cuenta creada correctamente"
+
+class RegistroPendienteOut(BaseModel):
+    registro_id: str
+    correo: str
+    expira_en_minutos: int
+    reenviar_en_segundos: int
+    detail: str = "Te enviamos un código de verificación a tu correo"
+
+class VerificacionRegistroIn(BaseModel):
+    registro_id: str = Field(min_length=20, max_length=100)
+    codigo: str = Field(pattern=r"^[0-9]{6}$")
+
+class ReenvioCodigoIn(BaseModel):
+    registro_id: str = Field(min_length=20, max_length=100)
 
 class LoginIn(BaseModel):
     correo: EmailStr

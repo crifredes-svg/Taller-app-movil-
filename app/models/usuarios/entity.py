@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import Column, Integer, String, text
+from sqlalchemy import Column, DateTime, Integer, String, Text, text
 from ...database.connection import Base
 
 def utc_now_naive() -> datetime:
@@ -48,3 +48,20 @@ class Usuario(Base):
     # tienen una persona a su cuidado.
     persona_cuidada_nombre = Column(String(80), nullable=True)
     persona_cuidada_edad = Column(Integer, nullable=True)
+
+
+class RegistroPendiente(Base):
+    """Datos de registro que esperan la verificación del correo."""
+
+    __tablename__ = "registros_pendientes"
+
+    id = Column(Integer, primary_key=True)
+    token_hash = Column(String(64), unique=True, nullable=False)
+    correo = Column(String(120), unique=True, nullable=False)
+    datos = Column(Text, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    codigo_hash = Column(String(64), nullable=False)
+    intentos = Column(Integer, nullable=False, default=0, server_default=text("0"))
+    expira_en = Column(DateTime, nullable=False)
+    enviado_en = Column(DateTime, nullable=False)
+    creado_en = Column(DateTime, nullable=False, default=utc_now_naive, index=True)

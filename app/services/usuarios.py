@@ -1,5 +1,9 @@
 """Compatibility exports for user model operations."""
 
-from ..models.usuarios.model import crear_usuario
+from ..models.usuarios.model import (
+    reenviar_codigo_registro,
+    solicitar_registro,
+    verificar_registro,
+)
 
-__all__ = ["crear_usuario"]
+__all__ = ["reenviar_codigo_registro", "solicitar_registro", "verificar_registro"]
